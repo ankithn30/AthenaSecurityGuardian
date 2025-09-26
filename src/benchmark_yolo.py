@@ -6,7 +6,7 @@ from ultralytics import YOLO
 import psutil
 import os
 
-def load_yolo_onnx(model_path='yolov8n.onnx'):
+def load_yolo_onnx(model_path='models/yolov8n.onnx'):
     """Load YOLOv8 ONNX model"""
     try:
         session = ort.InferenceSession(model_path, providers=['CPUExecutionProvider'])
@@ -14,9 +14,9 @@ def load_yolo_onnx(model_path='yolov8n.onnx'):
     except:
         print(f"ONNX model not found at {model_path}. Exporting from PyTorch model...")
         # Export YOLOv8n to ONNX
-        model = YOLO('yolov8n.pt')
+        model = YOLO('models/yolov8n.pt')
         model.export(format='onnx')
-        session = ort.InferenceSession('yolov8n.onnx', providers=['CPUExecutionProvider'])
+        session = ort.InferenceSession('models/yolov8n.onnx', providers=['CPUExecutionProvider'])
         return session
 
 def preprocess_frame(frame, input_size=(640, 640)):

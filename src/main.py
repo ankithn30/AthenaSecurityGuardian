@@ -78,7 +78,7 @@ def main():
 
     # Example usage: process a sample image (replace with actual path)
     # For demo, assume an image exists or download one
-    image_path = 'sample_face.jpg'  # Replace with actual image path
+    image_path = 'data/sample_face.jpg'  # Replace with actual image path
 
     if not os.path.exists(image_path):
         print(f"Sample image {image_path} not found. Please provide an image path.")
