@@ -61,23 +61,10 @@ class OptimizedFaceDetector:
                 break
                 
         if not model_path or not config_path:
-            # Download the model if not found
-            logger.warning("Model files not found, attempting to download...")
-            try:
-                import urllib.request
-                os.makedirs('models', exist_ok=True)
-                urllib.request.urlretrieve(
-                    'https://raw.githubusercontent.com/opencv/opencv_extra/master/testdata/dnn/opencv_face_detector.pbtxt',
-                    'models/opencv_face_detector.pbtxt')
-                urllib.request.urlretrieve(
-                    'https://github.com/opencv/opencv_3rdparty/raw/dnn_samples_face_detector_20180205_fp16/opencv_face_detector_uint8.pb',
-                    'models/opencv_face_detector_uint8.pb')
-                model_path = 'models/opencv_face_detector_uint8.pb'
-                config_path = 'models/opencv_face_detector.pbtxt'
-            except Exception as e:
-                logger.error(f"Failed to download model: {e}")
-                raise FileNotFoundError("Could not load face detection model")
-        
+            # Model files not found
+            logger.error("Model files not found. Please ensure the model files are present.")
+            raise FileNotFoundError("Could not load face detection model")
+
         # Load the model
         net = cv2.dnn.readNetFromTensorflow(model_path, config_path)
         
@@ -219,7 +206,7 @@ def draw_detections(image: np.ndarray, detections: List[Tuple[int, int, int, int
         label = f"{score:.2f}"
         text_y = y - 10 if y > 20 else y + 20
         cv2.putText(output, label, (x, text_y),
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
     
     return output
 
@@ -244,11 +231,11 @@ def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Optimized Face Detection using OpenCV DNN')
     parser.add_argument('--min-face-size', type=int, default=50,
-                      help='Minimum face size in pixels (default: 50)')
+        help='Minimum face size in pixels (default: 50)')
     parser.add_argument('--confidence', type=float, default=0.7,
-                      help='Confidence threshold (default: 0.7)')
+        help='Confidence threshold (default: 0.7)')
     parser.add_argument('--frame-skip', type=int, default=1,
-                      help='Number of frames to skip between detections (default: 1)')
+        help='Number of frames to skip between detections (default: 1)')
     args = parser.parse_args()
     
     # Initialize face detector
@@ -328,7 +315,7 @@ def main():
                 last_time = current_time
             
             cv2.putText(output, f"FPS: {fps:.1f}", (10, 30),
-                       cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             
             # Show result
             cv2.imshow('Optimized Face Detection', output)
