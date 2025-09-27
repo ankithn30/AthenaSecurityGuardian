@@ -67,29 +67,29 @@ class FaceDetector:
             image: Input image in BGR format (OpenCV default)
             
         Returns:
-            Preprocessed image in the format expected by the model (grayscale, float32, normalized)
+            Preprocessed image in the format expected by the model (RGB, float32, normalized)
         """
         try:
-            # Convert to grayscale if needed
+            # Convert BGR to RGB
             if len(image.shape) == 3:
                 if image.shape[2] == 4:  # RGBA
-                    gray = cv2.cvtColor(image, cv2.COLOR_BGRA2GRAY)
+                    rgb = cv2.cvtColor(image, cv2.COLOR_BGRA2RGB)
                 else:  # BGR
-                    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            else:  # Already grayscale
-                gray = image
+                    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            else:  # Grayscale
+                rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
             
-            # Resize to model's expected sizing (480x640 as per model input shape)
-            resized = cv2.resize(gray, (self.width, self.height))
+            # Resize to model's expected size
+            resized = cv2.resize(rgb, (self.width, self.height))
             
             # Convert to float32 and normalize to [0, 1]
             normalized = resized.astype(np.float32) / 255.0
             
-            # Add channel and batch dimensions (shape: [1, height, width, 1])
-            return np.expand_dims(np.expand_dims(normalized, axis=-1), axis=0)
+            # Add batch dimension (shape: [1, height, width, 3])
+            return np.expand_dims(normalized, axis=0)
             
         except Exception as e:
-            logger.error(f"Error in preprocess_image: {str(e)}")
+            print(f"Error in preprocess_image: {str(e)}")
             raise
 
     def detect_faces(self, image: np.ndarray) -> List[Tuple[int, int, int, int, float]]:
@@ -103,8 +103,15 @@ class FaceDetector:
             List of detected faces as (x, y, width, height, confidence) tuples
         """
         try:
+            # Save a test image for debugging
+            cv2.imwrite('test_input.jpg', image)
+            
             # Preprocess the image
             input_data = self.preprocess_image(image)
+            
+            # Save preprocessed input for debugging
+            input_img = (input_data[0] * 255).astype(np.uint8)
+            cv2.imwrite('test_preprocessed.jpg', input_img)
             
             # Set the input tensor
             self.interpreter.set_tensor(self.input_details[0]['index'], input_data)
@@ -112,57 +119,36 @@ class FaceDetector:
             # Run inference
             self.interpreter.invoke()
             
-            # Get the output tensors
-            heatmap = self.interpreter.get_tensor(self.output_details[0]['index'])[0]  # Heatmap
-            boxes = self.interpreter.get_tensor(self.output_details[1]['index'])[0]    # Bounding boxes
+            # Get all output tensors
+            outputs = []
+            for i, output_detail in enumerate(self.output_details):
+                output = self.interpreter.get_tensor(output_detail['index'])
+                outputs.append(output)
+                print(f"Output {i} - {output_detail['name']}:")
+                print(f"  Shape: {output.shape}")
+                print(f"  Min: {np.min(output):.4f}, Max: {np.max(output):.4f}, Mean: {np.mean(output):.4f}")
+                if len(output.shape) == 4:  # For feature maps
+                    print(f"  Non-zero values: {np.count_nonzero(output)} / {output.size} ({np.count_nonzero(output)/output.size*100:.2f}%)")
             
-            # Debug: Print output shapes and sample values
-            logger.debug(f"Heatmap shape: {heatmap.shape}, max: {np.max(heatmap):.2f}, min: {np.min(heatmap):.2f}")
-            logger.debug(f"Boxes shape: {boxes.shape}")
-            
-            # Process detections
-            detections = []
+            # For now, let's just return some dummy detections for testing
+            # This will help us verify that the drawing code works
             height, width = image.shape[:2]
+            detections = []
             
-            # Find all scores above threshold
-            scores_above_threshold = heatmap[..., 0] > self.threshold
-            y_indices, x_indices = np.where(scores_above_threshold)
+            # Add a dummy detection in the center of the image
+            box_size = 100
+            x1 = max(0, (width - box_size) // 2)
+            y1 = max(0, (height - box_size) // 2)
+            detections.append((x1, y1, box_size, box_size, 0.9))
             
-            for y, x in zip(y_indices, x_indices):
-                score = heatmap[y, x, 0]
-                
-                # Get bounding box coordinates (normalized [0,1])
-                # The model might output [y_center, x_center, height, width] or [y1, x1, y2, x2]
-                # Let's try both formats
-                if boxes[y, x, 2] <= 1.0 and boxes[y, x, 3] <= 1.0:  # Likely [y_center, x_center, h, w]
-                    y_center, x_center, h, w = boxes[y, x]
-                    x1 = max(0, int((x_center - w/2) * width))
-                    y1 = max(0, int((y_center - h/2) * height))
-                    x2 = min(width - 1, int((x_center + w/2) * width))
-                    y2 = min(height - 1, int((y_center + h/2) * height))
-                else:  # Likely [y1, x1, y2, x2]
-                    y1, x1, y2, x2 = boxes[y, x]
-                    x1 = int(x1 * width)
-                    y1 = int(y1 * height)
-                    x2 = int(x2 * width)
-                    y2 = int(y2 * height)
-                
-                # Calculate width and height
-                w = x2 - x1
-                h = y2 - y1
-                
-                # Only add if the face is large enough
-                if w >= self.min_face_size and h >= self.min_face_size:
-                    detections.append((x1, y1, w, h, float(score)))
-                    logger.debug(f"Added detection: ({x1}, {y1}, {w}, {h}) with score {score:.2f}")
-                else:
-                    logger.debug(f"Skipped small detection: ({x1}, {y1}, {w}, {h}) is smaller than min size {self.min_face_size}")
+            print(f"Added dummy detection at ({x1}, {y1}, {box_size}, {box_size})")
             
-            logger.debug(f"Found {len(detections)} faces")
             return detections
             
         except Exception as e:
-            logger.error(f"Error in detect_faces: {str(e)}", exc_info=True)
+            print(f"Error in detect_faces: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return []
 
 def draw_detections(image: np.ndarray, detections: List[Tuple[int, int, int, int, float]]) -> np.ndarray:
