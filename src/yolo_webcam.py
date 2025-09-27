@@ -74,7 +74,7 @@ def load_face_detector():
         print("Running in YOLO-only mode (face detection disabled)")
         return None
 
-def load_yolo_onnx(model_path='models/yolov8_det_quantized.onnx'):
+def load_yolo_onnx(model_path='../../models/yolov8_det_quantized.onnx'):
     """Load YOLOv8 ONNX model"""
     try:
         session = ort.InferenceSession(model_path)
@@ -82,7 +82,7 @@ def load_yolo_onnx(model_path='models/yolov8_det_quantized.onnx'):
     except:
         print(f"ONNX model not found at {model_path}. Exporting from PyTorch model...")
         # Export YOLOv8n to ONNX
-        model = YOLO('models/yolov8n.pt')
+        model = YOLO('../../models/yolov8n.pt')
         model.export(format='onnx')
         session = ort.InferenceSession('../models/yolov8n.onnx')
         return session
