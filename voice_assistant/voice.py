@@ -254,8 +254,8 @@ class VoiceInteractionSystem:
                         if activation_event['type'] == 'cv_activation':
                             resident_name = activation_event.get('resident_name', 'Resident')
                             print(f"\n🎯 CV Activation received! Resident detected: {resident_name}")
-                            # Say welcome message and enter active conversation
-                            welcome_message = f"Welcome {resident_name}"
+                            # Say welcome message and enter active conversation (always use "Resident")
+                            welcome_message = "Welcome, Resident"
                             if self.tts_available and self.tts:
                                 self.tts.Speak(welcome_message)
                                 print(f"🗣️ '{welcome_message}' spoken - entering active conversation mode")

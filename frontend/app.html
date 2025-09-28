@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATHENA - SECURITY ANGEL</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', 'Consolas', monospace;
+            background: #000000;
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                linear-gradient(90deg, transparent 98%, #ffff00 100%),
+                linear-gradient(0deg, transparent 98%, #ffff00 100%),
+                radial-gradient(circle at 25% 25%, rgba(255, 255, 0, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(255, 255, 0, 0.05) 0%, transparent 50%);
+            background-size: 50px 50px, 50px 50px, 200px 200px, 200px 200px;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(255, 255, 0, 0.03) 2px,
+                rgba(255, 255, 0, 0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #ffff00;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 3.2em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px #ffff00, 0 0 40px #ffff00, 0 0 60px #ffff00;
+            color: #ffff00;
+            font-weight: 900;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            border: 3px solid #ffff00;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header h1::before {
+            content: '⚡';
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            animation: pulse 2s infinite;
+        }
+
+        .header h1::after {
+            content: '⚡';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            animation: pulse 2s infinite reverse;
+        }
+
+        .header p {
+            color: #ffff00;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .status {
+            font-size: 1.4em;
+            padding: 25px;
+            border-radius: 0px;
+            margin: 25px 0;
+            border: 3px solid;
+            background: rgba(0,0,0,0.9);
+            text-transform: uppercase;
+            font-weight: 900;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 0, 0.1), transparent);
+            animation: scan 3s infinite;
+        }
+
+        @keyframes scan {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .status.connected { 
+            border-color: #ffff00;
+            color: #ffff00;
+            box-shadow: 0 0 30px rgba(255, 255, 0, 0.6), inset 0 0 30px rgba(255, 255, 0, 0.1);
+            animation: connectedPulse 2s infinite;
+        }
+
+        @keyframes connectedPulse {
+            0%, 100% { box-shadow: 0 0 30px rgba(255, 255, 0, 0.6), inset 0 0 30px rgba(255, 255, 0, 0.1); }
+            50% { box-shadow: 0 0 50px rgba(255, 255, 0, 0.8), inset 0 0 50px rgba(255, 255, 0, 0.2); }
+        }
+        
+        .status.disconnected { 
+            border-color: #ffffff;
+            color: #ffffff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3), inset 0 0 20px rgba(255, 255, 255, 0.05);
+        }
+        
+        .status.waiting { 
+            border-color: #ffff00;
+            color: #ffff00;
+            animation: waitingPulse 1.5s infinite;
+            box-shadow: 0 0 25px rgba(255, 255, 0, 0.4);
+        }
+
+        @keyframes waitingPulse {
+            0%, 100% { 
+                box-shadow: 0 0 25px rgba(255, 255, 0, 0.4);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 40px rgba(255, 255, 0, 0.7);
+                transform: scale(1.02);
+            }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 5px rgba(255, 255, 0, 0.3); }
+            50% { box-shadow: 0 0 25px rgba(255, 255, 0, 0.6); }
+            100% { box-shadow: 0 0 5px rgba(255, 255, 0, 0.3); }
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .media-section {
+            background: rgba(0, 0, 0, 0.95);
+            border: 3px solid #ffff00;
+            padding: 30px;
+            border-radius: 0px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.2), inset 0 0 20px rgba(255, 255, 0, 0.05);
+        }
+
+        .media-section::before {
+            content: 'SURVEILLANCE MODULE';
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: #000000;
+            color: #ffff00;
+            padding: 5px 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 2px solid #ffff00;
+        }
+
+        .media-section h3 {
+            color: #ffff00;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            border-bottom: 1px solid #ffff00;
+            padding-bottom: 10px;
+        }
+
+        #videoContainer {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            background: #000000;
+            border: 2px solid #ffffff;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        #remoteVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        #processingCanvas {
+            display: none;
+        }
+
+        .detection-box {
+            position: absolute;
+            border: 3px solid #ffff00;
+            background: rgba(255, 255, 0, 0.1);
+            pointer-events: none;
+        }
+
+        .detection-label {
+            position: absolute;
+            background: #ffff00;
+            color: #000000;
+            padding: 2px 6px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 0px;
+            pointer-events: none;
+        }
+
+        #audioContainer {
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border: 1px solid #ffff00;
+            margin-bottom: 20px;
+        }
+
+        .audio-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .volume-slider {
+            flex: 1;
+            height: 10px;
+            border-radius: 0px;
+            background: #ffffff;
+            outline: none;
+            appearance: none;
+            border: 1px solid #ffff00;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 0px;
+            background: #ffff00;
+            cursor: pointer;
+            border: 2px solid #000000;
+        }
+
+        .media-overlay {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0,0,0,0.9);
+            padding: 15px;
+            border: 1px solid #ffff00;
+            font-size: 0.9em;
+            color: #ffff00;
+            text-transform: uppercase;
+        }
+
+        .placeholder {
+            color: #ffffff;
+            font-size: 1.4em;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .control-panel {
+            background: rgba(0, 0, 0, 0.95);
+            border: 3px solid #ffffff;
+            padding: 30px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.03);
+        }
+
+        .control-panel::before {
+            content: 'CONTROL INTERFACE';
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: #000000;
+            color: #ffffff;
+            padding: 5px 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 2px solid #ffffff;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h3 {
+            margin-bottom: 20px;
+            color: #ffff00;
+            font-size: 1.3em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid #ffff00;
+            padding-bottom: 10px;
+        }
+
+        .connection-section {
+            text-align: center;
+            padding: 30px;
+            background: rgba(0,0,0,0.95);
+            border: 3px solid #ffff00;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 0 0 25px rgba(255, 255, 0, 0.2), inset 0 0 25px rgba(255, 255, 0, 0.05);
+        }
+
+        .connection-section::before {
+            content: 'REMOTE ACCESS';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000000;
+            color: #ffff00;
+            padding: 5px 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            letter-spacing: 3px;
+            border: 2px solid #ffff00;
+        }
+
+        .connection-link {
+            display: inline-block;
+            padding: 25px 40px;
+            background: #ffff00;
+            color: #000000;
+            text-decoration: none;
+            border-radius: 0px;
+            font-weight: 900;
+            font-size: 1.3em;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            border: 3px solid #000000;
+            transition: all 0.3s ease;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+            text-shadow: none;
+        }
+
+        .connection-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .connection-link:hover::before {
+            left: 100%;
+        }
+
+        .connection-link:hover {
+            background: #ffffff;
+            color: #000000;
+            box-shadow: 0 0 30px rgba(255, 255, 0, 0.8), inset 0 0 30px rgba(255, 255, 0, 0.2);
+            transform: scale(1.08) translateY(-2px);
+        }
+
+        .server-info {
+            background: #000000;
+            color: #ffff00;
+            padding: 25px;
+            border: 2px solid #ffff00;
+            margin: 25px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.2), inset 0 0 15px rgba(255, 255, 0, 0.05);
+            position: relative;
+        }
+
+        .server-info::before {
+            content: 'SYSTEM STATUS';
+            position: absolute;
+            top: -12px;
+            left: 15px;
+            background: #000000;
+            color: #ffff00;
+            padding: 3px 10px;
+            font-size: 0.8em;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 1px solid #ffff00;
+        }
+
+        .url-display {
+            background: #000000;
+            color: #ffffff;
+            padding: 20px;
+            border: 2px solid #ffff00;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            word-break: break-all;
+            margin-top: 20px;
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.1);
+            position: relative;
+        }
+
+        .url-display::before {
+            content: 'CONNECTION URL';
+            position: absolute;
+            top: -12px;
+            left: 15px;
+            background: #000000;
+            color: #ffff00;
+            padding: 3px 10px;
+            font-size: 0.8em;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 1px solid #ffff00;
+        }
+
+        .btn {
+            background: #000000;
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            padding: 18px 30px;
+            border-radius: 0px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 900;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            margin: 8px 0;
+            width: 100%;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            background: #ffff00;
+            color: #000000;
+            border-color: #ffff00;
+            box-shadow: 0 0 25px rgba(255, 255, 0, 0.8), inset 0 0 25px rgba(255, 255, 0, 0.2);
+            transform: translateY(-3px) scale(1.02);
+            text-shadow: 0 0 15px #000000;
+        }
+
+        .btn:disabled {
+            background: #333333;
+            color: #666666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            border-color: #666666;
+        }
+
+        .btn.success {
+            background: #ffff00;
+            color: #000000;
+            border-color: #ffff00;
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.4);
+        }
+
+        .btn.success:hover {
+            background: #ffffff;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.6);
+        }
+
+        .btn.danger {
+            background: #000000;
+            color: #ffffff;
+            border-color: #ffffff;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+
+        .btn.danger:hover {
+            background: #ffffff;
+            color: #000000;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+        }
+
+        .btn.danger:hover {
+            background: #ffff00;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.6);
+        }
+
+        .permission-status {
+            display: grid;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .permission-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            background: rgba(0,0,0,0.9);
+            border: 2px solid #ffffff;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .permission-item::before {
+            content: '●';
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .permission-granted {
+            border-color: #ffff00 !important;
+            background: rgba(255, 255, 0, 0.15) !important;
+            color: #ffff00 !important;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.3) !important;
+            animation: permissionGranted 0.5s ease;
+        }
+
+        @keyframes permissionGranted {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .permission-denied {
+            border-color: #ffffff !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            color: #ffffff !important;
+        }
+
+        /* Phone View Styles */
+        .phone-view {
+            display: none;
+        }
+
+        .phone-view.active {
+            display: block;
+        }
+
+        .phone-header {
+            text-align: center;
+            padding: 25px;
+            background: rgba(0,0,0,0.9);
+            border-bottom: 2px solid #ffff00;
+            margin-bottom: 25px;
+        }
+
+        .phone-header h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #ffff00;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            text-shadow: 0 0 20px #ffff00, 0 0 40px #ffff00;
+            font-weight: 900;
+            border: 3px solid #ffff00;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            position: relative;
+        }
+
+        .phone-controls {
+            display: grid;
+            gap: 20px;
+            padding: 25px;
+        }
+
+        .camera-preview {
+            width: 100%;
+            height: 300px;
+            background: #000000;
+            border: 3px solid #ffff00;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.3), inset 0 0 20px rgba(255, 255, 0, 0.05);
+        }
+
+        .camera-preview::before {
+            content: 'LIVE FEED';
+            position: absolute;
+            top: -15px;
+            left: 15px;
+            background: #000000;
+            color: #ffff00;
+            padding: 5px 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 2px solid #ffff00;
+        }
+
+        #localVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .media-test-section {
+            background: rgba(0,0,0,0.95);
+            border: 2px solid #ffffff;
+            padding: 30px;
+            margin: 25px 0;
+            position: relative;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1), inset 0 0 15px rgba(255, 255, 255, 0.03);
+        }
+
+        .media-test-section::before {
+            content: 'DIAGNOSTICS';
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: #000000;
+            color: #ffffff;
+            padding: 5px 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 2px solid #ffffff;
+        }
+
+        .media-test-section h4 {
+            color: #ffff00;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .audio-visualizer {
+            width: 100%;
+            height: 100px;
+            background: #000000;
+            border: 2px solid #ffff00;
+            margin: 20px 0;
+            display: flex;
+            align-items: end;
+            padding: 8px;
+            gap: 3px;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.2), inset 0 0 15px rgba(255, 255, 0, 0.05);
+            position: relative;
+        }
+
+        .audio-visualizer::before {
+            content: 'AUDIO LEVEL';
+            position: absolute;
+            top: -12px;
+            left: 15px;
+            background: #000000;
+            color: #ffff00;
+            padding: 3px 10px;
+            font-size: 0.8em;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 1px solid #ffff00;
+        }
+
+        .audio-bar {
+            flex: 1;
+            background: #ffff00;
+            border-radius: 0px;
+            transition: height 0.1s ease;
+            border: 1px solid #000000;
+            box-shadow: 0 0 5px rgba(255, 255, 0, 0.5);
+        }
+
+        .audio-bar:hover {
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.8);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            .audio-controls {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .copy-btn {
+            background: #000000;
+            color: #ffff00;
+            border: 2px solid #ffff00;
+            padding: 12px 25px;
+            border-radius: 0px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-left: 20px;
+            text-transform: uppercase;
+            font-weight: 900;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .copy-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 0, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .copy-btn:hover::before {
+            left: 100%;
+        }
+
+        .copy-btn:hover {
+            background: #ffff00;
+            color: #000000;
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.6);
+            transform: scale(1.05);
+        }
+
+        .remote-access-title {
+            font-size: 1.8em;
+            color: #ffff00;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 0 0 10px #ffff00;
+        }
+
+        .security-warning {
+            background: rgba(255, 255, 0, 0.15);
+            border: 3px solid #ffff00;
+            color: #ffff00;
+            padding: 25px;
+            margin: 25px 0;
+            text-align: center;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 1.1em;
+            box-shadow: 0 0 25px rgba(255, 255, 0, 0.3), inset 0 0 25px rgba(255, 255, 0, 0.05);
+            position: relative;
+            animation: warningPulse 2s infinite;
+        }
+
+        @keyframes warningPulse {
+            0%, 100% { box-shadow: 0 0 25px rgba(255, 255, 0, 0.3), inset 0 0 25px rgba(255, 255, 0, 0.05); }
+            50% { box-shadow: 0 0 40px rgba(255, 255, 0, 0.5), inset 0 0 40px rgba(255, 255, 0, 0.1); }
+        }
+
+        .access-indicator {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border: 3px solid #ffff00;
+            margin-right: 15px;
+            animation: blink 1s infinite;
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+        }
+
+        @keyframes blink {
+            0% { background: transparent; box-shadow: 0 0 10px rgba(255, 255, 0, 0.5); }
+            50% { background: #ffff00; box-shadow: 0 0 20px rgba(255, 255, 0, 0.8); }
+            100% { background: transparent; box-shadow: 0 0 10px rgba(255, 255, 0, 0.5); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Desktop View -->
+        <div id="desktopView">
+            <div class="header">
+                <h1>REMOTE ACCESS CONTROL</h1>
+                <p>SECURE DEVICE SURVEILLANCE SYSTEM</p>
+            </div>
+
+            <div id="connectionStatus" class="status waiting">
+                <span class="access-indicator"></span>AWAITING REMOTE CONNECTION...
+            </div>
+
+            <div class="main-content">
+                <div class="media-section">
+                    <h3>LIVE SURVEILLANCE FEED</h3>
+                    <div id="videoContainer">
+                        <div class="placeholder" id="videoPlaceholder">
+                            WAITING FOR REMOTE CAMERA ACCESS
+                        </div>
+                        <video id="remoteVideo" autoplay muted playsinline></video>
+                        <canvas id="processingCanvas"></canvas>
+                        <div class="media-overlay" id="videoOverlay" style="display: none;">
+                            <div>● LIVE FEED ACTIVE</div>
+                            <div id="videoStats">1280x720 | 30 FPS | ENCRYPTED</div>
+                        </div>
+                    </div>
+
+                    <div id="audioContainer">
+                        <h4>AUDIO INTERCEPT</h4>
+                        <div class="audio-visualizer" id="audioVisualizer"></div>
+                        <div class="audio-controls">
+                            <button id="muteBtn" class="btn" onclick="toggleMute()" disabled>MONITORING</button>
+                            <button id="speakerTestBtn" class="btn" onclick="testSpeaker()" disabled>TRANSMIT TEST</button>
+                        </div>
+                        <div class="volume-control">
+                            <span>SIGNAL:</span>
+                            <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="50" oninput="adjustVolume(this.value)" disabled>
+                            <span id="volumeValue">50%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-panel">
+                    <div class="section">
+                        <div class="connection-section">
+                            <div id="serverInfo" class="server-info">
+                                <div>● SERVER STATUS: <span id="serverStatus">ONLINE</span></div>
+                                <div>● TARGET IP: <span id="localIPDisplay">SCANNING...</span></div>
+                                <div>● PORT: <span id="portDisplay">8080</span></div>
+                            </div>
+                            <div id="connectionLink">
+                                <a href="#" id="phoneLink" class="connection-link" target="_blank">
+                                    ESTABLISH REMOTE ACCESS
+                                </a>
+                                <button class="copy-btn" onclick="copyConnectionURL()">COPY LINK</button>
+                            </div>
+                            <div id="connectionURL" class="url-display" style="display: none;"></div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>ACCESS PERMISSIONS</h3>
+                        <div class="permission-status">
+                            <div class="permission-item" id="cameraPermission">
+                                <span>CAMERA</span>
+                                <span id="cameraStatus">OFFLINE</span>
+                            </div>
+                            <div class="permission-item" id="microphonePermission">
+                                <span>MICROPHONE</span>
+                                <span id="microphoneStatus">OFFLINE</span>
+                            </div>
+                            <div class="permission-item" id="speakerPermission">
+                                <span>SPEAKER</span>
+                                <span id="speakerStatus">OFFLINE</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>SYSTEM CONTROL</h3>
+                        <button id="refreshBtn" class="btn" onclick="refreshConnection()">REFRESH CONNECTION</button>
+                        <button id="screenCaptureBtn" class="btn success" onclick="startScreenCapture()">🎥 CAPTURE SCRCPY FEED</button>
+                        <button id="stopCaptureBtn" class="btn danger" onclick="stopScreenCapture()" disabled>⏹️ STOP CAPTURE</button>
+                        <button id="disconnectBtn" class="btn danger" onclick="disconnectPhone()" disabled>TERMINATE ACCESS</button>
+                        <button id="recordBtn" class="btn success" onclick="startRecording()" disabled>START RECORDING</button>
+                        <button id="captureBtn" class="btn" onclick="capturePhoto()" disabled>CAPTURE FRAME</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phone View -->
+        <div id="phoneView" class="phone-view">
+            <div class="phone-header">
+                <h2>REMOTE ACCESS REQUEST</h2>
+                <div id="phoneStatus" class="status waiting">SECURITY PROTOCOL ACTIVE</div>
+            </div>
+
+            <div class="phone-controls">
+                <div class="security-warning">
+                    REMOTE ACCESS DETECTED<br>
+                    SYSTEM REQUESTING DEVICE PERMISSIONS
+                </div>
+
+                <div class="section">
+                    <h3>CAMERA MODULE</h3>
+                    <div class="camera-preview">
+                        <video id="localVideo" autoplay muted playsinline></video>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>GRANT ACCESS PERMISSIONS</h3>
+                    <button id="requestPermissionsBtn" class="btn success" onclick="requestAllPermissions()">
+                        AUTHORIZE REMOTE ACCESS
+                    </button>
+                    <div class="permission-status" style="margin-top: 20px;">
+                        <div class="permission-item" id="phoneCameraPermission">
+                            <span>CAMERA ACCESS</span>
+                            <span id="phoneCameraStatus">PENDING</span>
+                        </div>
+                        <div class="permission-item" id="phoneMicrophonePermission">
+                            <span>AUDIO ACCESS</span>
+                            <span id="phoneMicrophoneStatus">PENDING</span>
+                        </div>
+                        <div class="permission-item" id="phoneSpeakerPermission">
+                            <span>SPEAKER ACCESS</span>
+                            <span id="phoneSpeakerStatus">PENDING</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>ESTABLISH CONNECTION</h3>
+                    <button id="connectToDesktopBtn" class="btn success" onclick="connectToDesktop()" disabled>
+                        CONNECT TO CONTROL CENTER
+                    </button>
+                    <button id="startStreamingBtn" class="btn success" onclick="startStreaming()" disabled>
+                        BEGIN TRANSMISSION
+                    </button>
+                    <button id="stopStreamingBtn" class="btn danger" onclick="stopStreaming()" disabled>
+                        TERMINATE TRANSMISSION
+                    </button>
+                </div>
+
+                <div class="media-test-section">
+                    <h4>SYSTEM DIAGNOSTICS</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <button id="switchCameraBtn" class="btn" onclick="switchCamera()" disabled>
+                            SWITCH CAM
+                        </button>
+                        <button id="testMicBtn" class="btn" onclick="testMicrophone()" disabled>
+                            TEST AUDIO
+                        </button>
+                        <button id="testSpeakerPhoneBtn" class="btn" onclick="testSpeakerOnPhone()" disabled>
+                            TEST OUTPUT
+                        </button>
+                        <button id="toggleFlashBtn" class="btn" onclick="toggleFlash()" disabled>
+                            FLASH
+                        </button>
+                    </div>
+                    <div class="audio-visualizer" id="phoneAudioVisualizer" style="margin-top: 20px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let localIP = '';
+        let isConnected = false;
+        let isStreaming = false;
+        let localStream = null;
+        let audioContext = null;
+        let currentCamera = 'user';
+        let permissionsGranted = {
+            camera: false,
+            microphone: false,
+            speaker: false
+        };
+        let isRecording = false;
+        let audioAnalyser = null;
+        let audioDataArray = null;
+        let screenStream = null;
+        let isScreenCapturing = false;
+        let frameInterval = null;
+        let isProcessingFrames = false;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔒 REMOTE ACCESS CONTROL SYSTEM INITIALIZING...');
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const isPhoneView = urlParams.get('phone') === '1';
+            
+            if (isPhoneView) {
+                showPhoneView();
+            } else {
+                showDesktopView();
+                setTimeout(detectAndUpdateIP, 500);
+            }
+        });
+
+        function showDesktopView() {
+            document.getElementById('desktopView').style.display = 'block';
+            document.getElementById('phoneView').style.display = 'none';
+            console.log('💻 CONTROL CENTER ACTIVATED');
+        }
+
+        function showPhoneView() {
+            document.getElementById('desktopView').style.display = 'none';
+            document.getElementById('phoneView').style.display = 'block';
+            console.log('📱 TARGET DEVICE INTERFACE LOADED');
+        }
+
+        async function detectLocalIP() {
+            return new Promise((resolve) => {
+                console.log('🔍 SCANNING FOR TARGET IP...');
+                
+                const pc = new RTCPeerConnection({
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                });
+                
+                pc.createDataChannel('');
+                pc.createOffer().then(offer => pc.setLocalDescription(offer));
+                
+                const timeout = setTimeout(() => {
+                    pc.close();
+                    localIP = window.location.hostname !== 'localhost' ? window.location.hostname : '192.168.1.100';
+                    console.log('⚠ USING BACKUP IP:', localIP);
+                    resolve(localIP);
+                }, 3000);
+                
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        const candidate = event.candidate.candidate;
+                        const ipMatch = candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
+                        if (ipMatch && !ipMatch[1].startsWith('169.254') && !ipMatch[1].startsWith('127.')) {
+                            localIP = ipMatch[1];
+                            console.log('✅ TARGET IP ACQUIRED:', localIP);
+                            clearTimeout(timeout);
+                            pc.close();
+                            resolve(localIP);
+                        }
+                    }
+                };
+            });
+        }
+
+        async function detectAndUpdateIP() {
+            document.getElementById('localIPDisplay').textContent = 'SCANNING...';
+            await detectLocalIP();
+            document.getElementById('localIPDisplay').textContent = localIP;
+            updateConnectionLink();
+        }
+
+        function updateConnectionLink() {
+            if (!localIP) return;
+
+            const phoneUrl = `${window.location.protocol}//${localIP}:8080/index.html?phone=1`;
+            document.getElementById('phoneLink').href = phoneUrl;
+            document.getElementById('connectionURL').textContent = phoneUrl;
+            document.getElementById('connectionURL').style.display = 'block';
+            console.log('🔗 REMOTE ACCESS LINK GENERATED:', phoneUrl);
+        }
+
+        function copyConnectionURL() {
+            const url = document.getElementById('connectionURL').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('📋 ACCESS LINK COPIED TO CLIPBOARD!');
+            }).catch(() => {
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('📋 ACCESS LINK COPIED!');
+            });
+        }
+
+        // Phone-side functions with automatic connection flow
+        async function requestAllPermissions() {
+            console.log('🔐 REQUESTING SYSTEM ACCESS...');
+            
+            try {
+                // Request camera and microphone
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: currentCamera,
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+
+                // Set up camera
+                document.getElementById('localVideo').srcObject = localStream;
+                permissionsGranted.camera = true;
+                permissionsGranted.microphone = true;
+                
+                updatePhonePermissionStatus('camera', true);
+                updatePhonePermissionStatus('microphone', true);
+
+                // Test speaker access
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    permissionsGranted.speaker = true;
+                    updatePhonePermissionStatus('speaker', true);
+                } catch (error) {
+                    console.warn('⚠ SPEAKER ACCESS LIMITED:', error);
+                    updatePhonePermissionStatus('speaker', false);
+                }
+
+                // Set up audio visualization
+                setupAudioVisualization();
+                
+                document.getElementById('phoneStatus').className = 'status connected';
+                document.getElementById('phoneStatus').textContent = 'ACCESS GRANTED - SYSTEM COMPROMISED';
+                
+                // Enable controls
+                enablePhoneControls();
+                
+                // AUTO-CONNECT TO DESKTOP AND START STREAMING
+                setTimeout(() => {
+                    connectToDesktop();
+                }, 1000);
+                
+                // Auto-start streaming after connection
+                setTimeout(() => {
+                    if (isConnected) {
+                        startStreaming();
+                    }
+                }, 3000);
+                
+                console.log('✅ FULL SYSTEM ACCESS ACQUIRED');
+
+            } catch (error) {
+                console.error('❌ ACCESS DENIED:', error);
+                document.getElementById('phoneStatus').className = 'status disconnected';
+                document.getElementById('phoneStatus').textContent = 'ACCESS DENIED - SECURITY BREACH FAILED';
+                
+                updatePhonePermissionStatus('camera', false);
+                updatePhonePermissionStatus('microphone', false);
+                updatePhonePermissionStatus('speaker', false);
+                
+                alert('⚠ SYSTEM ACCESS REQUIRED FOR REMOTE OPERATION');
+            }
+        }
+
+        function updatePhonePermissionStatus(type, granted) {
+            const statusElement = document.getElementById(`phone${type.charAt(0).toUpperCase() + type.slice(1)}Status`);
+            const permissionElement = document.getElementById(`phone${type.charAt(0).toUpperCase() + type.slice(1)}Permission`);
+            
+            if (granted) {
+                statusElement.textContent = 'GRANTED';
+                permissionElement.className = 'permission-item permission-granted';
+            } else {
+                statusElement.textContent = 'DENIED';
+                permissionElement.className = 'permission-item permission-denied';
+            }
+        }
+
+        function setupAudioVisualization() {
+            if (!localStream || !audioContext) return;
+
+            const source = audioContext.createMediaStreamSource(localStream);
+            audioAnalyser = audioContext.createAnalyser();
+            audioAnalyser.fftSize = 256;
+            
+            source.connect(audioAnalyser);
+            
+            const bufferLength = audioAnalyser.frequencyBinCount;
+            audioDataArray = new Uint8Array(bufferLength);
+            
+            const visualizer = document.getElementById('phoneAudioVisualizer');
+            visualizer.innerHTML = '';
+            for (let i = 0; i < 25; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'audio-bar';
+                bar.style.height = '5px';
+                visualizer.appendChild(bar);
+            }
+        }
+
+        function updateAudioVisualization() {
+            if (!audioAnalyser || !audioDataArray) return;
+            
+            audioAnalyser.getByteFrequencyData(audioDataArray);
+            const visualizer = document.getElementById('phoneAudioVisualizer');
+            const bars = visualizer.querySelectorAll('.audio-bar');
+            
+            for (let i = 0; i < bars.length; i++) {
+                const value = audioDataArray[i] / 255;
+                bars[i].style.height = `${Math.max(2, value * 80)}px`;
+            }
+            
+            requestAnimationFrame(updateAudioVisualization);
+        }
+
+        function enablePhoneControls() {
+            document.getElementById('connectToDesktopBtn').disabled = false;
+            document.getElementById('startStreamingBtn').disabled = false;
+            document.getElementById('switchCameraBtn').disabled = false;
+            document.getElementById('testMicBtn').disabled = false;
+            document.getElementById('testSpeakerPhoneBtn').disabled = false;
+            document.getElementById('toggleFlashBtn').disabled = false;
+        }
+
+        // WebRTC Connection Management
+        let peerConnection = null;
+        let dataChannel = null;
+
+        async function connectToDesktop() {
+            console.log('🔗 ESTABLISHING CONNECTION TO CONTROL CENTER...');
+            
+            try {
+                // Get server IP from URL parameters or use current host
+                const urlParams = new URLSearchParams(window.location.search);
+                const serverIP = urlParams.get('server') || window.location.hostname;
+                
+                // Create peer connection
+                peerConnection = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                });
+
+                // Add local stream to peer connection
+                if (localStream) {
+                    localStream.getTracks().forEach(track => {
+                        peerConnection.addTrack(track, localStream);
+                    });
+                }
+
+                // Handle incoming stream
+                peerConnection.ontrack = (event) => {
+                    console.log('📹 REMOTE STREAM RECEIVED');
+                    const remoteVideo = document.getElementById('remoteVideo');
+                    if (remoteVideo) {
+                        remoteVideo.srcObject = event.streams[0];
+                        remoteVideo.style.display = 'block';
+                    }
+                };
+
+                // Create data channel for commands
+                dataChannel = peerConnection.createDataChannel('commands');
+                dataChannel.onopen = () => {
+                    console.log('📡 DATA CHANNEL OPENED');
+                    isConnected = true;
+                    updateConnectionStatus(true);
+                    
+                    // Notify desktop of permission status
+                    notifyDesktopPermissions();
+                };
+
+                dataChannel.onmessage = (event) => {
+                    handleRemoteCommand(event.data);
+                };
+
+                // Create offer
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                // Send offer to desktop (simplified - in real app, use signaling server)
+                console.log('📤 OFFER CREATED, AWAITING ANSWER...');
+                
+                // Simulate connection success for demo
+                setTimeout(() => {
+                    isConnected = true;
+                    updateConnectionStatus(true);
+                    notifyDesktopPermissions();
+                    console.log('✅ CONNECTION ESTABLISHED');
+                }, 2000);
+
+            } catch (error) {
+                console.error('❌ CONNECTION FAILED:', error);
+                alert('⚠ CONNECTION TO CONTROL CENTER FAILED');
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusElement = document.getElementById('phoneStatus');
+            if (connected) {
+                statusElement.className = 'status connected';
+                statusElement.textContent = 'CONNECTED TO CONTROL CENTER';
+                document.getElementById('startStreamingBtn').disabled = false;
+                
+                // Update desktop connection status
+                updateDesktopConnectionStatus(true);
+            } else {
+                statusElement.className = 'status disconnected';
+                statusElement.textContent = 'CONNECTION LOST';
+                updateDesktopConnectionStatus(false);
+            }
+        }
+
+        function notifyDesktopPermissions() {
+            if (dataChannel && dataChannel.readyState === 'open') {
+                const permissions = {
+                    type: 'permission_update',
+                    camera: permissionsGranted.camera,
+                    microphone: permissionsGranted.microphone,
+                    speaker: permissionsGranted.speaker
+                };
+                dataChannel.send(JSON.stringify(permissions));
+            }
+        }
+
+        function updateDesktopConnectionStatus(connected) {
+            if (dataChannel && dataChannel.readyState === 'open') {
+                const status = {
+                    type: 'connection_status',
+                    connected: connected
+                };
+                dataChannel.send(JSON.stringify(status));
+            }
+        }
+
+        async function startStreaming() {
+            if (!isConnected || !localStream) {
+                alert('⚠ ESTABLISH CONNECTION FIRST');
+                return;
+            }
+
+            console.log('📹 STARTING VIDEO TRANSMISSION...');
+            isStreaming = true;
+            
+            // Update UI
+            document.getElementById('startStreamingBtn').disabled = true;
+            document.getElementById('stopStreamingBtn').disabled = false;
+            document.getElementById('phoneStatus').textContent = 'TRANSMITTING LIVE FEED';
+            
+            // Start audio visualization
+            updateAudioVisualization();
+            
+            // Notify desktop of streaming status
+            if (dataChannel && dataChannel.readyState === 'open') {
+                const status = {
+                    type: 'streaming_status',
+                    streaming: true
+                };
+                dataChannel.send(JSON.stringify(status));
+            }
+            
+            console.log('✅ LIVE TRANSMISSION ACTIVE');
+        }
+
+        function stopStreaming() {
+            console.log('⏹ STOPPING TRANSMISSION...');
+            isStreaming = false;
+            
+            // Update UI
+            document.getElementById('startStreamingBtn').disabled = false;
+            document.getElementById('stopStreamingBtn').disabled = true;
+            document.getElementById('phoneStatus').textContent = 'CONNECTED TO CONTROL CENTER';
+            
+            // Notify desktop of streaming status
+            if (dataChannel && dataChannel.readyState === 'open') {
+                const status = {
+                    type: 'streaming_status',
+                    streaming: false
+                };
+                dataChannel.send(JSON.stringify(status));
+            }
+            
+            console.log('✅ TRANSMISSION TERMINATED');
+        }
+
+        // Media Control Functions
+        function toggleMute() {
+            if (!localStream) return;
+            
+            const audioTracks = localStream.getAudioTracks();
+            audioTracks.forEach(track => {
+                track.enabled = !track.enabled;
+            });
+            
+            const muteBtn = document.getElementById('muteBtn');
+            muteBtn.textContent = audioTracks[0].enabled ? '🔊 MONITORING' : '🔇 MUTED';
+            console.log(audioTracks[0].enabled ? '🔊 AUDIO ENABLED' : '🔇 AUDIO MUTED');
+        }
+
+        function adjustVolume(value) {
+            document.getElementById('volumeValue').textContent = value + '%';
+            console.log('📊 VOLUME ADJUSTED:', value + '%');
+        }
+
+        function testSpeaker() {
+            console.log('🔊 TESTING SPEAKER OUTPUT...');
+            // Create test tone
+            if (audioContext) {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.5);
+            }
+        }
+
+        function testMicrophone() {
+            console.log('🎤 TESTING MICROPHONE...');
+            if (localStream) {
+                const audioTracks = localStream.getAudioTracks();
+                if (audioTracks.length > 0) {
+                    console.log('✅ MICROPHONE ACTIVE');
+                    alert('🎤 MICROPHONE TEST SUCCESSFUL');
+                } else {
+                    console.log('❌ NO AUDIO TRACKS');
+                    alert('❌ MICROPHONE NOT AVAILABLE');
+                }
+            }
+        }
+
+        function testSpeakerOnPhone() {
+            console.log('🔊 TESTING PHONE SPEAKER...');
+            testSpeaker();
+        }
+
+        async function switchCamera() {
+            if (!localStream) return;
+            
+            console.log('🔄 SWITCHING CAMERA...');
+            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
+            
+            try {
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: currentCamera },
+                    audio: true
+                });
+                
+                // Replace video track
+                const videoTrack = newStream.getVideoTracks()[0];
+                const sender = peerConnection.getSenders().find(s => 
+                    s.track && s.track.kind === 'video'
+                );
+                
+                if (sender) {
+                    await sender.replaceTrack(videoTrack);
+                }
+                
+                // Update local video
+                document.getElementById('localVideo').srcObject = newStream;
+                
+                // Stop old stream
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = newStream;
+                
+                console.log('✅ CAMERA SWITCHED TO:', currentCamera);
+            } catch (error) {
+                console.error('❌ CAMERA SWITCH FAILED:', error);
+            }
+        }
+
+        function toggleFlash() {
+            console.log('💡 TOGGLE FLASH - NOT SUPPORTED IN BROWSER');
+            alert('💡 FLASH CONTROL NOT AVAILABLE IN WEB BROWSER');
+        }
+
+        // Desktop-side functions
+        function refreshConnection() {
+            console.log('🔄 REFRESHING CONNECTION...');
+            location.reload();
+        }
+
+        function disconnectPhone() {
+            console.log('⚠ TERMINATING REMOTE ACCESS...');
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            isConnected = false;
+            isStreaming = false;
+            
+            // Reset UI
+            document.getElementById('connectionStatus').className = 'status waiting';
+            document.getElementById('connectionStatus').textContent = 'AWAITING REMOTE CONNECTION...';
+            
+            // Reset permissions
+            ['camera', 'microphone', 'speaker'].forEach(type => {
+                updatePermissionStatus(type, false);
+            });
+            
+            // Disable controls
+            document.querySelectorAll('.btn').forEach(btn => {
+                if (btn.id !== 'refreshBtn') btn.disabled = true;
+            });
+            
+            console.log('✅ REMOTE ACCESS TERMINATED');
+        }
+
+        function startRecording() {
+            console.log('🎥 STARTING RECORDING...');
+            isRecording = true;
+            document.getElementById('recordBtn').textContent = '⏹ STOP RECORDING';
+            document.getElementById('recordBtn').onclick = stopRecording;
+            console.log('✅ RECORDING STARTED');
+        }
+
+        function stopRecording() {
+            console.log('⏹ STOPPING RECORDING...');
+            isRecording = false;
+            document.getElementById('recordBtn').textContent = '🎥 START RECORDING';
+            document.getElementById('recordBtn').onclick = startRecording;
+            console.log('✅ RECORDING STOPPED');
+        }
+
+        function capturePhoto() {
+            console.log('📸 CAPTURING FRAME...');
+            const video = document.getElementById('remoteVideo');
+            if (video && video.videoWidth > 0) {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0);
+                
+                // Download image
+                const link = document.createElement('a');
+                link.download = `capture_${Date.now()}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+                
+                console.log('✅ FRAME CAPTURED');
+            } else {
+                alert('⚠ NO VIDEO FEED AVAILABLE');
+            }
+        }
+
+        function updatePermissionStatus(type, granted) {
+            const statusElement = document.getElementById(`${type}Status`);
+            const permissionElement = document.getElementById(`${type}Permission`);
+            
+            if (granted) {
+                statusElement.textContent = 'ONLINE';
+                permissionElement.className = 'permission-item permission-granted';
+            } else {
+                statusElement.textContent = 'OFFLINE';
+                permissionElement.className = 'permission-item permission-denied';
+            }
+        }
+
+        function handleRemoteCommand(command) {
+            console.log('📨 REMOTE COMMAND RECEIVED:', command);
+            
+            try {
+                const cmd = JSON.parse(command);
+                switch (cmd.type) {
+                    case 'permission_update':
+                        if (cmd.camera !== undefined) {
+                            updatePermissionStatus('camera', cmd.camera);
+                        }
+                        if (cmd.microphone !== undefined) {
+                            updatePermissionStatus('microphone', cmd.microphone);
+                        }
+                        if (cmd.speaker !== undefined) {
+                            updatePermissionStatus('speaker', cmd.speaker);
+                        }
+                        break;
+                    case 'connection_status':
+                        updateConnectionStatus(cmd.connected);
+                        break;
+                    case 'streaming_status':
+                        isStreaming = cmd.streaming;
+                        break;
+                    case 'toggle_mute':
+                        toggleMute();
+                        break;
+                    case 'adjust_volume':
+                        adjustVolume(cmd.value);
+                        break;
+                    case 'capture_photo':
+                        capturePhoto();
+                        break;
+                    case 'start_recording':
+                        startRecording();
+                        break;
+                    case 'stop_recording':
+                        stopRecording();
+                        break;
+                    default:
+                        console.log('❓ UNKNOWN COMMAND:', cmd.type);
+                }
+            } catch (error) {
+                console.error('❌ INVALID COMMAND FORMAT:', error);
+            }
+        }
+
+        // Auto-refresh connection status
+        setInterval(() => {
+            if (isConnected && !isStreaming) {
+                // Simulate periodic status updates
+                console.log('📡 CONNECTION STATUS: ACTIVE');
+            }
+        }, 5000);
+
+        // Initialize audio visualization on desktop
+        function setupDesktopAudioVisualization() {
+            const visualizer = document.getElementById('audioVisualizer');
+            visualizer.innerHTML = '';
+            for (let i = 0; i < 25; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'audio-bar';
+                bar.style.height = '5px';
+                visualizer.appendChild(bar);
+            }
+        }
+
+        // Start desktop audio visualization
+        function startDesktopAudioVisualization() {
+            setupDesktopAudioVisualization();
+            setInterval(() => {
+                const bars = document.querySelectorAll('#audioVisualizer .audio-bar');
+                bars.forEach((bar, i) => {
+                    const height = Math.random() * 80 + 5;
+                    bar.style.height = `${height}px`;
+                });
+            }, 100);
+        }
+
+        // Initialize desktop view
+        if (window.location.search.indexOf('phone') === -1) {
+            document.addEventListener('DOMContentLoaded', () => {
+                startDesktopAudioVisualization();
+                
+                // Auto-detect and connect to phone when available
+                setInterval(() => {
+                    if (!isConnected) {
+                        // Simulate phone connection detection
+                        const urlParams = new URLSearchParams(window.location.search);
+                        if (urlParams.get('auto') === '1') {
+                            simulatePhoneConnection();
+                        }
+                    }
+                }, 5000);
+            });
+        }
+
+        // Screen Capture Functions
+        async function startScreenCapture() {
+            console.log('🎥 STARTING SCREEN CAPTURE...');
+
+            try {
+                // Check if screen capture is supported
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                    alert('❌ Screen capture is not supported in this browser');
+                    return;
+                }
+
+                // Request screen capture
+                screenStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: {
+                        mediaSource: 'screen',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
+                    audio: false // We don't need audio for scrcpy capture
+                });
+
+                console.log('✅ Screen capture permission granted');
+
+                // Set up the video element
+                const videoElement = document.getElementById('remoteVideo');
+                videoElement.srcObject = screenStream;
+                videoElement.style.display = 'block';
+
+                // Hide placeholder and show overlay
+                document.getElementById('videoPlaceholder').style.display = 'none';
+                document.getElementById('videoOverlay').style.display = 'block';
+                document.getElementById('videoStats').textContent = 'SCREEN CAPTURE | SCRCPY FEED';
+
+                // Update status
+                document.getElementById('connectionStatus').className = 'status connected';
+                document.getElementById('connectionStatus').textContent = '🎥 SCREEN CAPTURE ACTIVE - SCRCPY FEED DETECTED';
+
+                // Update UI state
+                isScreenCapturing = true;
+                document.getElementById('screenCaptureBtn').disabled = true;
+                document.getElementById('stopCaptureBtn').disabled = false;
+                document.getElementById('recordBtn').disabled = false;
+                document.getElementById('captureBtn').disabled = false;
+
+                // Handle stream end (when user stops sharing)
+                screenStream.getVideoTracks()[0].addEventListener('ended', () => {
+                    console.log('🎥 Screen capture ended by user');
+                    stopScreenCapture();
+                });
+
+                console.log('✅ SCREEN CAPTURE STARTED - SCRCPY FEED ACTIVE');
+
+            } catch (error) {
+                console.error('❌ Screen capture failed:', error);
+
+                if (error.name === 'NotAllowedError') {
+                    alert('❌ Screen capture permission denied. Please allow screen sharing to capture scrcpy feed.');
+                } else if (error.name === 'NotFoundError') {
+                    alert('❌ No screen capture source found. Make sure scrcpy is running.');
+                } else {
+                    alert('❌ Screen capture failed: ' + error.message);
+                }
+            }
+        }
+
+        function stopScreenCapture() {
+            console.log('⏹️ STOPPING SCREEN CAPTURE...');
+
+            if (screenStream) {
+                // Stop all tracks
+                screenStream.getTracks().forEach(track => track.stop());
+                screenStream = null;
+            }
+
+            // Reset video element
+            const videoElement = document.getElementById('remoteVideo');
+            videoElement.srcObject = null;
+            videoElement.style.display = 'none';
+
+            // Reset UI
+            document.getElementById('videoPlaceholder').style.display = 'block';
+            document.getElementById('videoOverlay').style.display = 'none';
+
+            // Update status
+            document.getElementById('connectionStatus').className = 'status waiting';
+            document.getElementById('connectionStatus').textContent = 'SCREEN CAPTURE STOPPED - READY TO CAPTURE SCRCPY FEED';
+
+            // Update button states
+            isScreenCapturing = false;
+            document.getElementById('screenCaptureBtn').disabled = false;
+            document.getElementById('stopCaptureBtn').disabled = true;
+            document.getElementById('recordBtn').disabled = true;
+            document.getElementById('captureBtn').disabled = true;
+
+            console.log('✅ SCREEN CAPTURE STOPPED');
+        }
+
+        function simulatePhoneConnection() {
+            console.log('📱 SIMULATING PHONE CONNECTION...');
+
+            // Simulate permission grants
+            setTimeout(() => {
+                updatePermissionStatus('camera', true);
+                updatePermissionStatus('microphone', true);
+                updatePermissionStatus('speaker', true);
+
+                // Update connection status
+                document.getElementById('connectionStatus').className = 'status connected';
+                document.getElementById('connectionStatus').textContent = 'REMOTE DEVICE CONNECTED';
+
+                // Enable controls
+                document.getElementById('muteBtn').disabled = false;
+                document.getElementById('speakerTestBtn').disabled = false;
+                document.getElementById('disconnectBtn').disabled = false;
+                document.getElementById('recordBtn').disabled = false;
+                document.getElementById('captureBtn').disabled = false;
+
+                // Show video placeholder
+                document.getElementById('videoPlaceholder').style.display = 'none';
+                document.getElementById('videoOverlay').style.display = 'block';
+
+                console.log('✅ PHONE CONNECTION SIMULATED');
+            }, 2000);
+        }
+
+        // CV Processing Functions
+        function startFrameProcessing() {
+            if (isProcessingFrames) return;
+
+            console.log('🎯 STARTING CV FRAME PROCESSING...');
+            isProcessingFrames = true;
+
+            const video = document.getElementById('remoteVideo');
+            const canvas = document.getElementById('processingCanvas');
+
+            // Set canvas size to match video
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+
+            // Start frame capture interval (10 FPS)
+            frameInterval = setInterval(() => {
+                if (!isProcessingFrames || !video.srcObject) return;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // Convert to base64 for API
+                const frameData = canvas.toDataURL('image/jpeg', 0.8);
+
+                // Send to backend for processing
+                processFrame(frameData);
+            }, 100); // 10 FPS
+
+            console.log('✅ CV FRAME PROCESSING STARTED');
+        }
+
+        function stopFrameProcessing() {
+            console.log('⏹️ STOPPING CV FRAME PROCESSING...');
+            isProcessingFrames = false;
+
+            if (frameInterval) {
+                clearInterval(frameInterval);
+                frameInterval = null;
+            }
+
+            // Clear detection overlays
+            clearDetections();
+
+            console.log('✅ CV FRAME PROCESSING STOPPED');
+        }
+
+        async function processFrame(frameData) {
+            try {
+                // Connect to CV backend server (adjust port if needed)
+                const backendUrl = 'http://localhost:5000/api/process-frame';
+                const response = await fetch(backendUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        frame: frameData,
+                        timestamp: Date.now()
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                displayDetections(result.detections || []);
+
+            } catch (error) {
+                console.error('❌ Frame processing error:', error);
+                // Don't spam console, only log occasionally
+                if (Math.random() < 0.01) {
+                    console.log('⚠ CV backend not available - ensure Flask server is running on port 5000');
+                }
+            }
+        }
+
+        function displayDetections(detections) {
+            // Clear previous detections
+            clearDetections();
+
+            const videoContainer = document.getElementById('videoContainer');
+
+            detections.forEach(detection => {
+                // Create detection box
+                const box = document.createElement('div');
+                box.className = 'detection-box';
+                box.style.left = detection.x + 'px';
+                box.style.top = detection.y + 'px';
+                box.style.width = detection.width + 'px';
+                box.style.height = detection.height + 'px';
+
+                // Create detection label
+                const label = document.createElement('div');
+                label.className = 'detection-label';
+                label.textContent = `${detection.label} (${Math.round(detection.confidence * 100)}%)`;
+                label.style.left = detection.x + 'px';
+                label.style.top = (detection.y - 25) + 'px';
+
+                videoContainer.appendChild(box);
+                videoContainer.appendChild(label);
+            });
+
+            // Update status with detection count
+            if (detections.length > 0) {
+                document.getElementById('connectionStatus').textContent = `🔍 AI DETECTION ACTIVE - ${detections.length} OBJECTS DETECTED`;
+            }
+        }
+
+        function clearDetections() {
+            const videoContainer = document.getElementById('videoContainer');
+            const boxes = videoContainer.querySelectorAll('.detection-box, .detection-label');
+            boxes.forEach(box => box.remove());
+        }
+
+        // Auto-start CV processing when video is available
+        function checkVideoAvailability() {
+            const video = document.getElementById('remoteVideo');
+
+            if (video.srcObject && video.videoWidth > 0) {
+                console.log('📹 Video feed detected, starting CV processing...');
+                startFrameProcessing();
+            } else {
+                stopFrameProcessing();
+            }
+        }
+
+        // Monitor video element for changes
+        setInterval(checkVideoAvailability, 1000);
+    </script>
+</body>
+</html>
