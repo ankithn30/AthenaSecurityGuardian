@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edge AI Camera Bridge - Offline</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
+    <title>REMOTE ACCESS CONTROL</title>
     <style>
         * {
             margin: 0;
@@ -13,190 +12,213 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Courier New', 'Consolas', monospace;
+            background: #000000;
+            color: #ffffff;
             min-height: 100vh;
-            padding: 20px;
+            overflow-x: hidden;
+            background-image: 
+                linear-gradient(90deg, transparent 98%, #ffff00 100%),
+                linear-gradient(0deg, transparent 98%, #ffff00 100%),
+                radial-gradient(circle at 25% 25%, rgba(255, 255, 0, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(255, 255, 0, 0.05) 0%, transparent 50%);
+            background-size: 50px 50px, 50px 50px, 200px 200px, 200px 200px;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(255, 255, 0, 0.03) 2px,
+                rgba(255, 255, 0, 0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 1;
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 30px;
-            height: 100vh;
+            padding: 20px;
         }
 
-        .panel {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .control-panel h2 {
-            color: #333;
-            margin-bottom: 25px;
+        .header {
             text-align: center;
-            font-size: 1.6rem;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #ffff00;
+            padding-bottom: 20px;
         }
 
-        .network-info {
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-left: 4px solid #667eea;
-        }
-
-        .network-info h3 {
-            color: #333;
+        .header h1 {
+            font-size: 3.2em;
             margin-bottom: 10px;
-            font-size: 1.1rem;
+            text-shadow: 0 0 20px #ffff00, 0 0 40px #ffff00, 0 0 60px #ffff00;
+            color: #ffff00;
+            font-weight: 900;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            border: 3px solid #ffff00;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            position: relative;
+            overflow: hidden;
         }
 
-        .ip-address {
-            font-family: 'Courier New', monospace;
-            background: #f8f9fa;
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #495057;
-            text-align: center;
-            margin: 10px 0;
+        .header h1::before {
+            content: '⚡';
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            animation: pulse 2s infinite;
         }
 
-        .qr-section {
-            text-align: center;
-            margin-bottom: 25px;
+        .header h1::after {
+            content: '⚡';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            animation: pulse 2s infinite reverse;
         }
 
-        #qrcode {
-            display: inline-block;
-            padding: 15px;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            margin-bottom: 15px;
-        }
-
-        .qr-instructions {
-            background: rgba(255, 193, 7, 0.1);
-            border: 2px solid rgba(255, 193, 7, 0.3);
-            border-radius: 10px;
-            padding: 15px;
-            margin: 15px 0;
-            text-align: left;
-        }
-
-        .qr-instructions h4 {
-            color: #856404;
-            margin-bottom: 10px;
-        }
-
-        .qr-instructions ol {
-            color: #856404;
-            padding-left: 20px;
-        }
-
-        .qr-instructions li {
-            margin-bottom: 5px;
+        .header p {
+            color: #ffff00;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         .status {
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-weight: 600;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .status.waiting {
-            background: #e3f2fd;
-            color: #1565c0;
-            border: 2px solid #bbdefb;
-        }
-
-        .status.connected {
-            background: #d4edda;
-            color: #155724;
-            border: 2px solid #c3e6cb;
-        }
-
-        .status.streaming {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 2px solid #bee5eb;
-        }
-
-        .controls {
-            display: grid;
-            gap: 12px;
-            margin-bottom: 25px;
-        }
-
-        button {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            font-size: 1.4em;
+            padding: 25px;
+            border-radius: 0px;
+            margin: 25px 0;
+            border: 3px solid;
+            background: rgba(0,0,0,0.9);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
         }
 
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        .status::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 0, 0.1), transparent);
+            animation: scan 3s infinite;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        @keyframes scan {
+            0% { left: -100%; }
+            100% { left: 100%; }
         }
 
-        .btn-success {
-            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
-            color: white;
+        .status.connected { 
+            border-color: #ffff00;
+            color: #ffff00;
+            box-shadow: 0 0 30px rgba(255, 255, 0, 0.6), inset 0 0 30px rgba(255, 255, 0, 0.1);
+            animation: connectedPulse 2s infinite;
         }
 
-        .btn-danger {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
-            color: white;
+        @keyframes connectedPulse {
+            0%, 100% { box-shadow: 0 0 30px rgba(255, 255, 0, 0.6), inset 0 0 30px rgba(255, 255, 0, 0.1); }
+            50% { box-shadow: 0 0 50px rgba(255, 255, 0, 0.8), inset 0 0 50px rgba(255, 255, 0, 0.2); }
+        }
+        
+        .status.disconnected { 
+            border-color: #ffffff;
+            color: #ffffff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3), inset 0 0 20px rgba(255, 255, 255, 0.05);
+        }
+        
+        .status.waiting { 
+            border-color: #ffff00;
+            color: #ffff00;
+            animation: waitingPulse 1.5s infinite;
+            box-shadow: 0 0 25px rgba(255, 255, 0, 0.4);
         }
 
-        .btn-warning {
-            background: linear-gradient(135deg, #ffa726 0%, #ffb74d 100%);
-            color: white;
+        @keyframes waitingPulse {
+            0%, 100% { 
+                box-shadow: 0 0 25px rgba(255, 255, 0, 0.4);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 40px rgba(255, 255, 0, 0.7);
+                transform: scale(1.02);
+            }
         }
 
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
+        @keyframes pulse {
+            0% { box-shadow: 0 0 5px rgba(255, 255, 0, 0.3); }
+            50% { box-shadow: 0 0 25px rgba(255, 255, 0, 0.6); }
+            100% { box-shadow: 0 0 5px rgba(255, 255, 0, 0.3); }
         }
 
-        .video-panel h2 {
-            color: #333;
-            margin-bottom: 25px;
-            text-align: center;
-            font-size: 1.8rem;
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            margin-top: 20px;
         }
 
-        .video-container {
+        .media-section {
+            background: rgba(0, 0, 0, 0.95);
+            border: 3px solid #ffff00;
+            padding: 30px;
+            border-radius: 0px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.2), inset 0 0 20px rgba(255, 255, 0, 0.05);
+        }
+
+        .media-section::before {
+            content: 'SURVEILLANCE MODULE';
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: #000000;
+            color: #ffff00;
+            padding: 5px 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 2px solid #ffff00;
+        }
+
+        .media-section h3 {
+            color: #ffff00;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            border-bottom: 1px solid #ffff00;
+            padding-bottom: 10px;
+        }
+
+        #videoContainer {
             position: relative;
             width: 100%;
-            height: 450px;
-            border-radius: 15px;
+            height: 400px;
+            background: #000000;
+            border: 2px solid #ffffff;
             overflow: hidden;
-            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             margin-bottom: 20px;
         }
 
@@ -204,943 +226,1465 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 15px;
+            display: none;
         }
 
-        .video-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            text-align: center;
-            z-index: 10;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 30px;
-            border-radius: 15px;
-        }
-
-        .video-overlay i {
-            font-size: 4rem;
-            margin-bottom: 15px;
-            opacity: 0.8;
-        }
-
-        .cv-controls {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
+        #audioContainer {
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border: 1px solid #ffff00;
             margin-bottom: 20px;
         }
 
-        .stats-grid {
+        .audio-controls {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 15px;
+            margin-top: 15px;
         }
 
-        .stats {
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 10px;
-            padding: 15px;
-        }
-
-        .stats h3 {
-            margin-bottom: 15px;
-            color: #333;
-            font-size: 1.1rem;
-        }
-
-        .stat-item {
+        .volume-control {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0;
         }
 
-        .detection-overlay {
+        .volume-slider {
+            flex: 1;
+            height: 10px;
+            border-radius: 0px;
+            background: #ffffff;
+            outline: none;
+            appearance: none;
+            border: 1px solid #ffff00;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 0px;
+            background: #ffff00;
+            cursor: pointer;
+            border: 2px solid #000000;
+        }
+
+        .media-overlay {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 255, 0, 0.8);
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            font-weight: 600;
-            display: none;
+            top: 15px;
+            left: 15px;
+            background: rgba(0,0,0,0.9);
+            padding: 15px;
+            border: 1px solid #ffff00;
+            font-size: 0.9em;
+            color: #ffff00;
+            text-transform: uppercase;
         }
 
-        .phone-view {
-            display: none;
+        .placeholder {
+            color: #ffffff;
+            font-size: 1.4em;
             text-align: center;
-            padding: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
-        .phone-controls {
-            position: fixed;
-            bottom: 20px;
+        .control-panel {
+            background: rgba(0, 0, 0, 0.95);
+            border: 3px solid #ffffff;
+            padding: 30px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.03);
+        }
+
+        .control-panel::before {
+            content: 'CONTROL INTERFACE';
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: #000000;
+            color: #ffffff;
+            padding: 5px 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 2px solid #ffffff;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h3 {
+            margin-bottom: 20px;
+            color: #ffff00;
+            font-size: 1.3em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid #ffff00;
+            padding-bottom: 10px;
+        }
+
+        .connection-section {
+            text-align: center;
+            padding: 30px;
+            background: rgba(0,0,0,0.95);
+            border: 3px solid #ffff00;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 0 0 25px rgba(255, 255, 0, 0.2), inset 0 0 25px rgba(255, 255, 0, 0.05);
+        }
+
+        .connection-section::before {
+            content: 'REMOTE ACCESS';
+            position: absolute;
+            top: -15px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px;
-            border-radius: 20px;
-            display: flex;
-            gap: 15px;
+            background: #000000;
+            color: #ffff00;
+            padding: 5px 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            letter-spacing: 3px;
+            border: 2px solid #ffff00;
         }
 
-        .phone-controls button {
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 12px;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            font-size: 1.5rem;
+        .connection-link {
+            display: inline-block;
+            padding: 25px 40px;
+            background: #ffff00;
+            color: #000000;
+            text-decoration: none;
+            border-radius: 0px;
+            font-weight: 900;
+            font-size: 1.3em;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            border: 3px solid #000000;
+            transition: all 0.3s ease;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+            text-shadow: none;
         }
 
-        #phoneVideo {
+        .connection-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
             width: 100%;
-            height: 70vh;
-            object-fit: cover;
-            border-radius: 15px;
-            border: 3px solid #667eea;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1), transparent);
+            transition: left 0.5s ease;
         }
 
-        @media (max-width: 768px) {
-            .container {
-                grid-template-columns: 1fr;
-                height: auto;
-            }
-            
-            .panel {
-                padding: 20px;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
+        .connection-link:hover::before {
+            left: 100%;
         }
 
-        /* Phone view styles */
-        body.phone-mode {
-            background: #000;
-            padding: 0;
+        .connection-link:hover {
+            background: #ffffff;
+            color: #000000;
+            box-shadow: 0 0 30px rgba(255, 255, 0, 0.8), inset 0 0 30px rgba(255, 255, 0, 0.2);
+            transform: scale(1.08) translateY(-2px);
         }
 
-        body.phone-mode .container {
-            display: none;
+        .server-info {
+            background: #000000;
+            color: #ffff00;
+            padding: 25px;
+            border: 2px solid #ffff00;
+            margin: 25px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.2), inset 0 0 15px rgba(255, 255, 0, 0.05);
+            position: relative;
         }
 
-        body.phone-mode .phone-view {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-            background: #000;
-            color: white;
+        .server-info::before {
+            content: 'SYSTEM STATUS';
+            position: absolute;
+            top: -12px;
+            left: 15px;
+            background: #000000;
+            color: #ffff00;
+            padding: 3px 10px;
+            font-size: 0.8em;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 1px solid #ffff00;
         }
 
-        .pulse {
-            animation: pulse 2s infinite;
+        .url-display {
+            background: #000000;
+            color: #ffffff;
+            padding: 20px;
+            border: 2px solid #ffff00;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            word-break: break-all;
+            margin-top: 20px;
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.1);
+            position: relative;
         }
 
-        @keyframes pulse {
+        .url-display::before {
+            content: 'CONNECTION URL';
+            position: absolute;
+            top: -12px;
+            left: 15px;
+            background: #000000;
+            color: #ffff00;
+            padding: 3px 10px;
+            font-size: 0.8em;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 1px solid #ffff00;
+        }
+
+        .btn {
+            background: #000000;
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            padding: 18px 30px;
+            border-radius: 0px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 900;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            margin: 8px 0;
+            width: 100%;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            background: #ffff00;
+            color: #000000;
+            border-color: #ffff00;
+            box-shadow: 0 0 25px rgba(255, 255, 0, 0.8), inset 0 0 25px rgba(255, 255, 0, 0.2);
+            transform: translateY(-3px) scale(1.02);
+            text-shadow: 0 0 15px #000000;
+        }
+
+        .btn:disabled {
+            background: #333333;
+            color: #666666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            border-color: #666666;
+        }
+
+        .btn.success {
+            background: #ffff00;
+            color: #000000;
+            border-color: #ffff00;
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.4);
+        }
+
+        .btn.success:hover {
+            background: #ffffff;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.6);
+        }
+
+        .btn.danger {
+            background: #000000;
+            color: #ffffff;
+            border-color: #ffffff;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+
+        .btn.danger:hover {
+            background: #ffffff;
+            color: #000000;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+        }
+
+        .btn.danger:hover {
+            background: #ffff00;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.6);
+        }
+
+        .permission-status {
+            display: grid;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .permission-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            background: rgba(0,0,0,0.9);
+            border: 2px solid #ffffff;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .permission-item::before {
+            content: '●';
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .permission-granted {
+            border-color: #ffff00 !important;
+            background: rgba(255, 255, 0, 0.15) !important;
+            color: #ffff00 !important;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.3) !important;
+            animation: permissionGranted 0.5s ease;
+        }
+
+        @keyframes permissionGranted {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
+
+        .permission-denied {
+            border-color: #ffffff !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            color: #ffffff !important;
+        }
+
+        /* Phone View Styles */
+        .phone-view {
+            display: none;
+        }
+
+        .phone-view.active {
+            display: block;
+        }
+
+        .phone-header {
+            text-align: center;
+            padding: 25px;
+            background: rgba(0,0,0,0.9);
+            border-bottom: 2px solid #ffff00;
+            margin-bottom: 25px;
+        }
+
+        .phone-header h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #ffff00;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            text-shadow: 0 0 20px #ffff00, 0 0 40px #ffff00;
+            font-weight: 900;
+            border: 3px solid #ffff00;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            position: relative;
+        }
+
+        .phone-controls {
+            display: grid;
+            gap: 20px;
+            padding: 25px;
+        }
+
+        .camera-preview {
+            width: 100%;
+            height: 300px;
+            background: #000000;
+            border: 3px solid #ffff00;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.3), inset 0 0 20px rgba(255, 255, 0, 0.05);
+        }
+
+        .camera-preview::before {
+            content: 'LIVE FEED';
+            position: absolute;
+            top: -15px;
+            left: 15px;
+            background: #000000;
+            color: #ffff00;
+            padding: 5px 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 2px solid #ffff00;
+        }
+
+        #localVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .media-test-section {
+            background: rgba(0,0,0,0.95);
+            border: 2px solid #ffffff;
+            padding: 30px;
+            margin: 25px 0;
+            position: relative;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1), inset 0 0 15px rgba(255, 255, 255, 0.03);
+        }
+
+        .media-test-section::before {
+            content: 'DIAGNOSTICS';
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: #000000;
+            color: #ffffff;
+            padding: 5px 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 2px solid #ffffff;
+        }
+
+        .media-test-section h4 {
+            color: #ffff00;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .audio-visualizer {
+            width: 100%;
+            height: 100px;
+            background: #000000;
+            border: 2px solid #ffff00;
+            margin: 20px 0;
+            display: flex;
+            align-items: end;
+            padding: 8px;
+            gap: 3px;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.2), inset 0 0 15px rgba(255, 255, 0, 0.05);
+            position: relative;
+        }
+
+        .audio-visualizer::before {
+            content: 'AUDIO LEVEL';
+            position: absolute;
+            top: -12px;
+            left: 15px;
+            background: #000000;
+            color: #ffff00;
+            padding: 3px 10px;
+            font-size: 0.8em;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 1px solid #ffff00;
+        }
+
+        .audio-bar {
+            flex: 1;
+            background: #ffff00;
+            border-radius: 0px;
+            transition: height 0.1s ease;
+            border: 1px solid #000000;
+            box-shadow: 0 0 5px rgba(255, 255, 0, 0.5);
+        }
+
+        .audio-bar:hover {
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.8);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            .audio-controls {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .copy-btn {
+            background: #000000;
+            color: #ffff00;
+            border: 2px solid #ffff00;
+            padding: 12px 25px;
+            border-radius: 0px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-left: 20px;
+            text-transform: uppercase;
+            font-weight: 900;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .copy-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 0, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .copy-btn:hover::before {
+            left: 100%;
+        }
+
+        .copy-btn:hover {
+            background: #ffff00;
+            color: #000000;
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.6);
+            transform: scale(1.05);
+        }
+
+        .remote-access-title {
+            font-size: 1.8em;
+            color: #ffff00;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 0 0 10px #ffff00;
+        }
+
+        .security-warning {
+            background: rgba(255, 255, 0, 0.15);
+            border: 3px solid #ffff00;
+            color: #ffff00;
+            padding: 25px;
+            margin: 25px 0;
+            text-align: center;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 1.1em;
+            box-shadow: 0 0 25px rgba(255, 255, 0, 0.3), inset 0 0 25px rgba(255, 255, 0, 0.05);
+            position: relative;
+            animation: warningPulse 2s infinite;
+        }
+
+        @keyframes warningPulse {
+            0%, 100% { box-shadow: 0 0 25px rgba(255, 255, 0, 0.3), inset 0 0 25px rgba(255, 255, 0, 0.05); }
+            50% { box-shadow: 0 0 40px rgba(255, 255, 0, 0.5), inset 0 0 40px rgba(255, 255, 0, 0.1); }
+        }
+
+        .access-indicator {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border: 3px solid #ffff00;
+            margin-right: 15px;
+            animation: blink 1s infinite;
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+        }
+
+        @keyframes blink {
+            0% { background: transparent; box-shadow: 0 0 10px rgba(255, 255, 0, 0.5); }
+            50% { background: #ffff00; box-shadow: 0 0 20px rgba(255, 255, 0, 0.8); }
+            100% { background: transparent; box-shadow: 0 0 10px rgba(255, 255, 0, 0.5); }
+        }
     </style>
 </head>
 <body>
-    <!-- Desktop View -->
     <div class="container">
-        <div class="panel control-panel">
-            <h2>🏠 Local Edge AI Bridge</h2>
-            
-            <div class="network-info">
-                <h3>📡 Network Information</h3>
-                <div>Local IP: <div class="ip-address" id="localIP">Detecting...</div></div>
-                <div style="font-size: 0.9rem; color: #666; margin-top: 10px;">
-                    ⚠️ Ensure phone and PC are on the same WiFi network
-                </div>
+        <!-- Desktop View -->
+        <div id="desktopView">
+            <div class="header">
+                <h1>REMOTE ACCESS CONTROL</h1>
+                <p>SECURE DEVICE SURVEILLANCE SYSTEM</p>
             </div>
 
-            <div class="qr-section">
-                <div id="qrcode"></div>
-                <div class="qr-instructions">
-                    <h4>📱 How to Connect:</h4>
-                    <ol>
-                        <li>Connect your phone to the same WiFi</li>
-                        <li>Open camera app or QR scanner</li>
-                        <li>Scan the QR code above</li>
-                        <li>Allow camera and microphone access</li>
-                        <li>Start streaming!</li>
-                    </ol>
-                </div>
+            <div id="connectionStatus" class="status waiting">
+                <span class="access-indicator"></span>AWAITING REMOTE CONNECTION...
             </div>
 
-            <div class="status waiting" id="connectionStatus">
-                📱 Waiting for phone connection...
-            </div>
-
-            <div class="controls">
-                <button class="btn-primary" id="refreshQR">🔄 Refresh QR Code</button>
-                <button class="btn-success" id="startServer">🚀 Start Local Server</button>
-                <button class="btn-warning" id="testConnection" disabled>🔗 Test Connection</button>
-                <button class="btn-danger" id="stopServer" disabled>⏹️ Stop Server</button>
-            </div>
-
-            <div class="stats">
-                <h3>📊 Connection Stats</h3>
-                <div class="stat-item">
-                    <span>Server Status:</span>
-                    <span id="serverStatus">Stopped</span>
-                </div>
-                <div class="stat-item">
-                    <span>Connected Devices:</span>
-                    <span id="connectedDevices">0</span>
-                </div>
-                <div class="stat-item">
-                    <span>Data Transfer:</span>
-                    <span id="dataTransfer">0 MB</span>
-                </div>
-                <div class="stat-item">
-                    <span>Uptime:</span>
-                    <span id="serverUptime">--</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="panel video-panel">
-            <h2>📹 Edge AI Computer Vision</h2>
-            
-            <div class="video-container">
-                <video id="remoteVideo" autoplay muted playsinline></video>
-                <div class="video-overlay" id="videoOverlay">
-                    <div>📱</div>
-                    <p>Waiting for phone camera...</p>
-                    <p style="font-size: 0.9rem; opacity: 0.7;">Scan QR code to start streaming</p>
-                </div>
-                <div class="detection-overlay" id="detectionOverlay">
-                    🎯 Objects Detected: <span id="liveDetectionCount">0</span>
-                </div>
-            </div>
-
-            <div class="cv-controls">
-                <button class="btn-success" id="startDetection" disabled>🎯 Start CV</button>
-                <button class="btn-warning" id="captureFrame" disabled>📸 Capture</button>
-                <button class="btn-primary" id="saveModel" disabled>💾 Save Model</button>
-                <button class="btn-danger" id="stopStreaming" disabled>⏹️ Stop Stream</button>
-            </div>
-
-            <div class="stats-grid">
-                <div class="stats">
-                    <h3>🎥 Video Stats</h3>
-                    <div class="stat-item">
-                        <span>Resolution:</span>
-                        <span id="videoResolution">--</span>
+            <div class="main-content">
+                <div class="media-section">
+                    <h3>LIVE SURVEILLANCE FEED</h3>
+                    <div id="videoContainer">
+                        <div class="placeholder" id="videoPlaceholder">
+                            WAITING FOR REMOTE CAMERA ACCESS
+                        </div>
+                        <video id="remoteVideo" autoplay muted playsinline></video>
+                        <div class="media-overlay" id="videoOverlay" style="display: none;">
+                            <div>● LIVE FEED ACTIVE</div>
+                            <div id="videoStats">1280x720 | 30 FPS | ENCRYPTED</div>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <span>Frame Rate:</span>
-                        <span id="frameRate">0 FPS</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Latency:</span>
-                        <span id="streamLatency">-- ms</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Quality:</span>
-                        <span id="streamQuality">--</span>
+
+                    <div id="audioContainer">
+                        <h4>AUDIO INTERCEPT</h4>
+                        <div class="audio-visualizer" id="audioVisualizer"></div>
+                        <div class="audio-controls">
+                            <button id="muteBtn" class="btn" onclick="toggleMute()" disabled>MONITORING</button>
+                            <button id="speakerTestBtn" class="btn" onclick="testSpeaker()" disabled>TRANSMIT TEST</button>
+                        </div>
+                        <div class="volume-control">
+                            <span>SIGNAL:</span>
+                            <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="50" oninput="adjustVolume(this.value)" disabled>
+                            <span id="volumeValue">50%</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="stats">
-                    <h3>🤖 AI Processing</h3>
-                    <div class="stat-item">
-                        <span>Model Status:</span>
-                        <span id="modelStatus">Idle</span>
+                <div class="control-panel">
+                    <div class="section">
+                        <div class="connection-section">
+                            <div id="serverInfo" class="server-info">
+                                <div>● SERVER STATUS: <span id="serverStatus">ONLINE</span></div>
+                                <div>● TARGET IP: <span id="localIPDisplay">SCANNING...</span></div>
+                                <div>● PORT: <span id="portDisplay">8080</span></div>
+                            </div>
+                            <div id="connectionLink">
+                                <a href="#" id="phoneLink" class="connection-link" target="_blank">
+                                    ESTABLISH REMOTE ACCESS
+                                </a>
+                                <button class="copy-btn" onclick="copyConnectionURL()">COPY LINK</button>
+                            </div>
+                            <div id="connectionURL" class="url-display" style="display: none;"></div>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <span>Detections/sec:</span>
-                        <span id="detectionsPerSec">0</span>
+
+                    <div class="section">
+                        <h3>ACCESS PERMISSIONS</h3>
+                        <div class="permission-status">
+                            <div class="permission-item" id="cameraPermission">
+                                <span>CAMERA</span>
+                                <span id="cameraStatus">OFFLINE</span>
+                            </div>
+                            <div class="permission-item" id="microphonePermission">
+                                <span>MICROPHONE</span>
+                                <span id="microphoneStatus">OFFLINE</span>
+                            </div>
+                            <div class="permission-item" id="speakerPermission">
+                                <span>SPEAKER</span>
+                                <span id="speakerStatus">OFFLINE</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <span>Processing Time:</span>
-                        <span id="processingTime">-- ms</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>NPU Usage:</span>
-                        <span id="npuUsage">0%</span>
+
+                    <div class="section">
+                        <h3>SYSTEM CONTROL</h3>
+                        <button id="refreshBtn" class="btn" onclick="refreshConnection()">REFRESH CONNECTION</button>
+                        <button id="disconnectBtn" class="btn danger" onclick="disconnectPhone()" disabled>TERMINATE ACCESS</button>
+                        <button id="recordBtn" class="btn success" onclick="startRecording()" disabled>START RECORDING</button>
+                        <button id="captureBtn" class="btn" onclick="capturePhoto()" disabled>CAPTURE FRAME</button>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Phone View (shown when accessed from phone) -->
-    <div class="phone-view" id="phoneView">
-        <h2 style="padding: 20px; background: rgba(255,255,255,0.1);">📱 Edge AI Camera</h2>
-        <video id="phoneVideo" autoplay playsinline></video>
-        <div class="phone-controls">
-            <button id="switchCamera">🔄</button>
-            <button id="toggleFlash">💡</button>
-            <button id="startPhoneStream">📹</button>
-            <button id="disconnectPhone">❌</button>
-        </div>
-        <div style="position: fixed; top: 80px; left: 20px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; color: white; font-size: 0.9rem;">
-            Status: <span id="phoneStatus">Ready to stream</span>
+        <!-- Phone View -->
+        <div id="phoneView" class="phone-view">
+            <div class="phone-header">
+                <h2>REMOTE ACCESS REQUEST</h2>
+                <div id="phoneStatus" class="status waiting">SECURITY PROTOCOL ACTIVE</div>
+            </div>
+
+            <div class="phone-controls">
+                <div class="security-warning">
+                    REMOTE ACCESS DETECTED<br>
+                    SYSTEM REQUESTING DEVICE PERMISSIONS
+                </div>
+
+                <div class="section">
+                    <h3>CAMERA MODULE</h3>
+                    <div class="camera-preview">
+                        <video id="localVideo" autoplay muted playsinline></video>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>GRANT ACCESS PERMISSIONS</h3>
+                    <button id="requestPermissionsBtn" class="btn success" onclick="requestAllPermissions()">
+                        AUTHORIZE REMOTE ACCESS
+                    </button>
+                    <div class="permission-status" style="margin-top: 20px;">
+                        <div class="permission-item" id="phoneCameraPermission">
+                            <span>CAMERA ACCESS</span>
+                            <span id="phoneCameraStatus">PENDING</span>
+                        </div>
+                        <div class="permission-item" id="phoneMicrophonePermission">
+                            <span>AUDIO ACCESS</span>
+                            <span id="phoneMicrophoneStatus">PENDING</span>
+                        </div>
+                        <div class="permission-item" id="phoneSpeakerPermission">
+                            <span>SPEAKER ACCESS</span>
+                            <span id="phoneSpeakerStatus">PENDING</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>ESTABLISH CONNECTION</h3>
+                    <button id="connectToDesktopBtn" class="btn success" onclick="connectToDesktop()" disabled>
+                        CONNECT TO CONTROL CENTER
+                    </button>
+                    <button id="startStreamingBtn" class="btn success" onclick="startStreaming()" disabled>
+                        BEGIN TRANSMISSION
+                    </button>
+                    <button id="stopStreamingBtn" class="btn danger" onclick="stopStreaming()" disabled>
+                        TERMINATE TRANSMISSION
+                    </button>
+                </div>
+
+                <div class="media-test-section">
+                    <h4>SYSTEM DIAGNOSTICS</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <button id="switchCameraBtn" class="btn" onclick="switchCamera()" disabled>
+                            SWITCH CAM
+                        </button>
+                        <button id="testMicBtn" class="btn" onclick="testMicrophone()" disabled>
+                            TEST AUDIO
+                        </button>
+                        <button id="testSpeakerPhoneBtn" class="btn" onclick="testSpeakerOnPhone()" disabled>
+                            TEST OUTPUT
+                        </button>
+                        <button id="toggleFlashBtn" class="btn" onclick="toggleFlash()" disabled>
+                            FLASH
+                        </button>
+                    </div>
+                    <div class="audio-visualizer" id="phoneAudioVisualizer" style="margin-top: 20px;"></div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        class OfflineEdgeAI {
-            constructor() {
-                this.isPhoneView = this.detectPhoneView();
-                this.localIP = null;
-                this.serverRunning = false;
-                this.connectedDevices = 0;
-                this.startTime = null;
-                this.currentStream = null;
-                this.detectionActive = false;
-                this.detectionCount = 0;
-                this.dataChannels = new Map();
+        // Global variables
+        let localIP = '';
+        let isConnected = false;
+        let isStreaming = false;
+        let localStream = null;
+        let audioContext = null;
+        let currentCamera = 'user';
+        let permissionsGranted = {
+            camera: false,
+            microphone: false,
+            speaker: false
+        };
+        let isRecording = false;
+        let audioAnalyser = null;
+        let audioDataArray = null;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔒 REMOTE ACCESS CONTROL SYSTEM INITIALIZING...');
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const isPhoneView = urlParams.get('phone') === '1';
+            
+            if (isPhoneView) {
+                showPhoneView();
+            } else {
+                showDesktopView();
+                setTimeout(detectAndUpdateIP, 500);
+            }
+        });
+
+        function showDesktopView() {
+            document.getElementById('desktopView').style.display = 'block';
+            document.getElementById('phoneView').style.display = 'none';
+            console.log('💻 CONTROL CENTER ACTIVATED');
+        }
+
+        function showPhoneView() {
+            document.getElementById('desktopView').style.display = 'none';
+            document.getElementById('phoneView').style.display = 'block';
+            console.log('📱 TARGET DEVICE INTERFACE LOADED');
+        }
+
+        async function detectLocalIP() {
+            return new Promise((resolve) => {
+                console.log('🔍 SCANNING FOR TARGET IP...');
                 
-                if (this.isPhoneView) {
-                    this.initPhoneView();
-                } else {
-                    this.initDesktopView();
-                }
-            }
-
-            detectPhoneView() {
-                const urlParams = new URLSearchParams(window.location.search);
-                const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                return urlParams.has('phone') || (isMobile && window.innerWidth < 768);
-            }
-
-            async initDesktopView() {
-                await this.detectLocalIP();
-                this.setupDesktopEventListeners();
-                this.generateQRCode();
-                this.startStatsUpdater();
-            }
-
-            initPhoneView() {
-                document.body.classList.add('phone-mode');
-                this.setupPhoneEventListeners();
-                this.initPhoneCamera();
-            }
-
-            async detectLocalIP() {
-                try {
-                    // Method 1: WebRTC to get local IP
-                    const pc = new RTCPeerConnection({iceServers: []});
-                    const noop = () => {};
-                    
-                    pc.createDataChannel('');
-                    pc.createOffer().then(offer => pc.setLocalDescription(offer));
-                    
-                    pc.onicecandidate = (ice) => {
-                        if (ice && ice.candidate && ice.candidate.candidate) {
-                            const candidate = ice.candidate.candidate;
-                            const match = candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3})/);
-                            if (match) {
-                                this.localIP = match[1];
-                                document.getElementById('localIP').textContent = this.localIP;
-                                pc.close();
-                            }
+                const pc = new RTCPeerConnection({
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                });
+                
+                pc.createDataChannel('');
+                pc.createOffer().then(offer => pc.setLocalDescription(offer));
+                
+                const timeout = setTimeout(() => {
+                    pc.close();
+                    localIP = window.location.hostname !== 'localhost' ? window.location.hostname : '192.168.1.100';
+                    console.log('⚠ USING BACKUP IP:', localIP);
+                    resolve(localIP);
+                }, 3000);
+                
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        const candidate = event.candidate.candidate;
+                        const ipMatch = candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
+                        if (ipMatch && !ipMatch[1].startsWith('169.254') && !ipMatch[1].startsWith('127.')) {
+                            localIP = ipMatch[1];
+                            console.log('✅ TARGET IP ACQUIRED:', localIP);
+                            clearTimeout(timeout);
+                            pc.close();
+                            resolve(localIP);
                         }
-                    };
-                } catch (error) {
-                    // Fallback: use common local IP patterns
-                    this.localIP = '192.168.1.100'; // Placeholder
-                    document.getElementById('localIP').textContent = this.localIP + ' (estimated)';
-                }
-            }
-
-            generateQRCode() {
-                const port = 8080; // You'll need to implement the local server
-                const phoneUrl = `http://${this.localIP}:${port}?phone=1`;
-                
-                document.getElementById('qrcode').innerHTML = '';
-                
-                QRCode.toCanvas(
-                    document.getElementById('qrcode'),
-                    phoneUrl,
-                    {
-                        width: 180,
-                        margin: 2,
-                        color: {
-                            dark: '#333333',
-                            light: '#FFFFFF'
-                        }
-                    },
-                    (error) => {
-                        if (error) {
-                            console.error('QR Code generation failed:', error);
-                            // Fallback: show URL as text
-                            document.getElementById('qrcode').innerHTML = 
-                                `<div style="padding: 20px; background: #f8f9fa; border-radius: 10px; word-break: break-all;">${phoneUrl}</div>`;
-                        }
-                    }
-                );
-            }
-
-            setupDesktopEventListeners() {
-                document.getElementById('refreshQR').addEventListener('click', () => {
-                    this.generateQRCode();
-                });
-
-                document.getElementById('startServer').addEventListener('click', () => {
-                    this.startLocalServer();
-                });
-
-                document.getElementById('stopServer').addEventListener('click', () => {
-                    this.stopLocalServer();
-                });
-
-                document.getElementById('testConnection').addEventListener('click', () => {
-                    this.testConnection();
-                });
-
-                document.getElementById('startDetection').addEventListener('click', () => {
-                    this.toggleDetection();
-                });
-
-                document.getElementById('captureFrame').addEventListener('click', () => {
-                    this.captureFrame();
-                });
-
-                document.getElementById('saveModel').addEventListener('click', () => {
-                    this.saveModel();
-                });
-
-                document.getElementById('stopStreaming').addEventListener('click', () => {
-                    this.stopStreaming();
-                });
-            }
-
-            setupPhoneEventListeners() {
-                document.getElementById('switchCamera').addEventListener('click', () => {
-                    this.switchCamera();
-                });
-
-                document.getElementById('toggleFlash').addEventListener('click', () => {
-                    this.toggleFlash();
-                });
-
-                document.getElementById('startPhoneStream').addEventListener('click', () => {
-                    this.startPhoneStreaming();
-                });
-
-                document.getElementById('disconnectPhone').addEventListener('click', () => {
-                    this.disconnectPhone();
-                });
-            }
-
-            async initPhoneCamera() {
-                try {
-                    this.currentStream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { 
-                            facingMode: 'environment', // Back camera
-                            width: { ideal: 1920 },
-                            height: { ideal: 1080 }
-                        }, 
-                        audio: true 
-                    });
-                    
-                    document.getElementById('phoneVideo').srcObject = this.currentStream;
-                    document.getElementById('phoneStatus').textContent = 'Camera ready';
-                } catch (error) {
-                    console.error('Camera access failed:', error);
-                    document.getElementById('phoneStatus').textContent = 'Camera access denied';
-                }
-            }
-
-            startLocalServer() {
-                // Simulate server start (in real implementation, you'd start a local HTTP server)
-                this.serverRunning = true;
-                this.startTime = Date.now();
-                this.connectedDevices = 0;
-                
-                document.getElementById('serverStatus').textContent = 'Running';
-                document.getElementById('startServer').disabled = true;
-                document.getElementById('stopServer').disabled = false;
-                document.getElementById('testConnection').disabled = false;
-                
-                this.updateStatus('waiting', '🚀 Local server started! Scan QR code with phone');
-                
-                // Simulate phone connection after delay
-                setTimeout(() => {
-                    this.simulatePhoneConnection();
-                }, 5000);
-            }
-
-            stopLocalServer() {
-                this.serverRunning = false;
-                this.connectedDevices = 0;
-                this.startTime = null;
-                
-                document.getElementById('serverStatus').textContent = 'Stopped';
-                document.getElementById('startServer').disabled = false;
-                document.getElementById('stopServer').disabled = true;
-                document.getElementById('testConnection').disabled = true;
-                
-                this.updateStatus('waiting', '📱 Server stopped. Click "Start Local Server" to begin');
-                this.stopStreaming();
-            }
-
-            simulatePhoneConnection() {
-                if (!this.serverRunning) return;
-                
-                this.connectedDevices = 1;
-                this.updateStatus('connected', '📱 Phone connected! Starting camera stream...');
-                
-                setTimeout(() => {
-                    this.startVideoStream();
-                }, 2000);
-            }
-
-            async startVideoStream() {
-                try {
-                    // For demo: use local camera as "phone" stream
-                    this.currentStream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { 
-                            width: { ideal: 1280 },
-                            height: { ideal: 720 }
-                        }, 
-                        audio: true 
-                    });
-                    
-                    const videoElement = document.getElementById('remoteVideo');
-                    videoElement.srcObject = this.currentStream;
-                    
-                    // Hide overlay and enable controls
-                    document.getElementById('videoOverlay').style.display = 'none';
-                    this.enableVideoControls();
-                    
-                    this.updateStatus('streaming', '🎬 Live streaming from phone camera');
-                    this.updateVideoStats();
-                    
-                } catch (error) {
-                    console.error('Failed to start video stream:', error);
-                    this.createSimulatedStream();
-                }
-            }
-
-            createSimulatedStream() {
-                const canvas = document.createElement('canvas');
-                canvas.width = 1280;
-                canvas.height = 720;
-                const ctx = canvas.getContext('2d');
-                
-                let frameCount = 0;
-                const drawFrame = () => {
-                    if (!this.serverRunning) return;
-                    
-                    // Create animated background
-                    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-                    gradient.addColorStop(0, `hsl(${frameCount % 360}, 70%, 50%)`);
-                    gradient.addColorStop(1, `hsl(${(frameCount + 180) % 360}, 70%, 30%)`);
-                    ctx.fillStyle = gradient;
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    
-                    // Add simulated objects for detection
-                    this.drawSimulatedObjects(ctx, frameCount);
-                    
-                    // Add frame info
-                    ctx.fillStyle = 'white';
-                    ctx.font = '24px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('📱 Simulated Edge AI Phone Camera', canvas.width/2, 50);
-                    ctx.fillText(`Frame: ${frameCount}`, canvas.width/2, canvas.height - 50);
-                    
-                    frameCount++;
-                    if (this.serverRunning) {
-                        requestAnimationFrame(drawFrame);
                     }
                 };
-                
-                drawFrame();
-                
-                const stream = canvas.captureStream(30);
-                document.getElementById('remoteVideo').srcObject = stream;
-                this.currentStream = stream;
-                
-                document.getElementById('videoOverlay').style.display = 'none';
-                this.enableVideoControls();
-                this.updateVideoStats();
-            }
+            });
+        }
 
-            drawSimulatedObjects(ctx, frameCount) {
-                // Simulate moving objects for CV detection
-                const objects = [
-                    { x: 200 + Math.sin(frameCount * 0.02) * 100, y: 200, size: 50, color: '#ff6b6b', type: 'person' },
-                    { x: 600 + Math.cos(frameCount * 0.015) * 150, y: 300, size: 40, color: '#4ecdc4', type: 'vehicle' },
-                    { x: 1000, y: 150 + Math.sin(frameCount * 0.025) * 80, size: 30, color: '#45b7d1', type: 'object' }
-                ];
-                
-                objects.forEach((obj, index) => {
-                    // Draw object
-                    ctx.fillStyle = obj.color;
-                    ctx.fillRect(obj.x - obj.size/2, obj.y - obj.size/2, obj.size, obj.size);
-                    
-                    // Draw detection box if CV is active
-                    if (this.detectionActive) {
-                        ctx.strokeStyle = '#00ff00';
-                        ctx.lineWidth = 3;
-                        ctx.strokeRect(obj.x - obj.size/2 - 5, obj.y - obj.size/2 - 5, obj.size + 10, obj.size + 10);
-                        
-                        // Label
-                        ctx.fillStyle = '#00ff00';
-                        ctx.font = '16px Arial';
-                        ctx.fillText(obj.type, obj.x, obj.y - obj.size/2 - 10);
+        async function detectAndUpdateIP() {
+            document.getElementById('localIPDisplay').textContent = 'SCANNING...';
+            await detectLocalIP();
+            document.getElementById('localIPDisplay').textContent = localIP;
+            updateConnectionLink();
+        }
+
+        function updateConnectionLink() {
+            if (!localIP) return;
+
+            const phoneUrl = `${window.location.protocol}//${localIP}:8080/index.html?phone=1`;
+            document.getElementById('phoneLink').href = phoneUrl;
+            document.getElementById('connectionURL').textContent = phoneUrl;
+            document.getElementById('connectionURL').style.display = 'block';
+            console.log('🔗 REMOTE ACCESS LINK GENERATED:', phoneUrl);
+        }
+
+        function copyConnectionURL() {
+            const url = document.getElementById('connectionURL').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('📋 ACCESS LINK COPIED TO CLIPBOARD!');
+            }).catch(() => {
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('📋 ACCESS LINK COPIED!');
+            });
+        }
+
+        // Phone-side functions with automatic connection flow
+        async function requestAllPermissions() {
+            console.log('🔐 REQUESTING SYSTEM ACCESS...');
+            
+            try {
+                // Request camera and microphone
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: currentCamera,
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
                     }
                 });
-                
-                if (this.detectionActive) {
-                    this.detectionCount = objects.length;
-                }
-            }
 
-            enableVideoControls() {
-                document.getElementById('startDetection').disabled = false;
-                document.getElementById('captureFrame').disabled = false;
-                document.getElementById('saveModel').disabled = false;
-                document.getElementById('stopStreaming').disabled = false;
-            }
+                // Set up camera
+                document.getElementById('localVideo').srcObject = localStream;
+                permissionsGranted.camera = true;
+                permissionsGranted.microphone = true;
+                
+                updatePhonePermissionStatus('camera', true);
+                updatePhonePermissionStatus('microphone', true);
 
-            toggleDetection() {
-                const button = document.getElementById('startDetection');
-                const overlay = document.getElementById('detectionOverlay');
-                
-                if (!this.detectionActive) {
-                    this.detectionActive = true;
-                    button.textContent = '⏹️ Stop CV';
-                    button.className = 'btn-danger';
-                    overlay.style.display = 'block';
-                    
-                    document.getElementById('modelStatus').textContent = 'Active';
-                    
-                    // Simulate real-time detection updates
-                    this.detectionInterval = setInterval(() => {
-                        if (this.detectionActive) {
-                            document.getElementById('liveDetectionCount').textContent = this.detectionCount;
-                            document.getElementById('detectionsPerSec').textContent = 
-                                Math.floor(Math.random() * 5 + 15);
-                            document.getElementById('processingTime').textContent = 
-                                Math.floor(Math.random() * 20 + 10) + ' ms';
-                            document.getElementById('npuUsage').textContent = 
-                                Math.floor(Math.random() * 30 + 40) + '%';
-                        }
-                    }, 100);
-                    
-                } else {
-                    this.detectionActive = false;
-                    button.textContent = '🎯 Start CV';
-                    button.className = 'btn-success';
-                    overlay.style.display = 'none';
-                    
-                    clearInterval(this.detectionInterval);
-                    document.getElementById('modelStatus').textContent = 'Idle';
-                    document.getElementById('npuUsage').textContent = '0%';
-                }
-            }
-
-            captureFrame() {
-                const video = document.getElementById('remoteVideo');
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth || 1280;
-                canvas.height = video.videoHeight || 720;
-                
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0);
-                
-                // Add detection annotations if active
-                if (this.detectionActive) {
-                    ctx.strokeStyle = '#00ff00';
-                    ctx.lineWidth = 2;
-                    ctx.font = '16px Arial';
-                    ctx.fillStyle = '#00ff00';
-                    
-                    // Add timestamp and detection info
-                    ctx.fillText(`Detections: ${this.detectionCount}`, 20, 30);
-                    ctx.fillText(`Timestamp: ${new Date().toISOString()}`, 20, 55);
-                }
-                
-                // Download the captured frame
-                canvas.toBlob(blob => {
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `edge_ai_frame_${Date.now()}.png`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                });
-                
-                // Visual feedback
-                const button = document.getElementById('captureFrame');
-                const originalText = button.textContent;
-                button.textContent = '✅ Captured!';
-                setTimeout(() => {
-                    button.textContent = originalText;
-                }, 1500);
-            }
-
-            saveModel() {
-                // Simulate model saving (in real implementation, save trained CV model)
-                const button = document.getElementById('saveModel');
-                button.textContent = '💾 Saving...';
-                button.disabled = true;
-                
-                setTimeout(() => {
-                    // Create a mock model file for download
-                    const modelData = {
-                        modelType: 'edge_ai_cv_model',
-                        timestamp: new Date().toISOString(),
-                        detectionCount: this.detectionCount,
-                        trainingFrames: Math.floor(Math.random() * 1000 + 500),
-                        accuracy: (Math.random() * 0.2 + 0.8).toFixed(3),
-                        modelSize: Math.floor(Math.random() * 50 + 10) + 'MB'
-                    };
-                    
-                    const blob = new Blob([JSON.stringify(modelData, null, 2)], {type: 'application/json'});
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `edge_ai_model_${Date.now()}.json`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    
-                    button.textContent = '✅ Model Saved!';
-                    setTimeout(() => {
-                        button.textContent = '💾 Save Model';
-                        button.disabled = false;
-                    }, 2000);
-                }, 1500);
-            }
-
-            stopStreaming() {
-                if (this.currentStream) {
-                    this.currentStream.getTracks().forEach(track => track.stop());
-                    this.currentStream = null;
-                }
-                
-                document.getElementById('remoteVideo').srcObject = null;
-                document.getElementById('videoOverlay').style.display = 'block';
-                
-                // Disable controls
-                document.getElementById('startDetection').disabled = true;
-                document.getElementById('captureFrame').disabled = true;
-                document.getElementById('saveModel').disabled = true;
-                document.getElementById('stopStreaming').disabled = true;
-                
-                // Stop detection if active
-                if (this.detectionActive) {
-                    this.toggleDetection();
-                }
-                
-                this.connectedDevices = 0;
-                this.updateStatus('waiting', '📱 Stream stopped. Waiting for reconnection...');
-            }
-
-            updateVideoStats() {
-                if (this.currentStream) {
-                    const videoTrack = this.currentStream.getVideoTracks()[0];
-                    if (videoTrack) {
-                        const settings = videoTrack.getSettings();
-                        document.getElementById('videoResolution').textContent = 
-                            `${settings.width || 1280}x${settings.height || 720}`;
-                        document.getElementById('frameRate').textContent = 
-                            `${settings.frameRate || 30} FPS`;
-                        document.getElementById('streamQuality').textContent = 'HD';
-                    }
-                }
-                
-                // Simulate network latency
-                document.getElementById('streamLatency').textContent = 
-                    `${Math.floor(Math.random() * 30 + 20)} ms`;
-            }
-
-            updateStatus(type, message) {
-                const statusElement = document.getElementById('connectionStatus');
-                statusElement.className = `status ${type}`;
-                statusElement.textContent = message;
-                
-                if (type === 'connected') {
-                    statusElement.classList.add('pulse');
-                } else {
-                    statusElement.classList.remove('pulse');
-                }
-            }
-
-            testConnection() {
-                const button = document.getElementById('testConnection');
-                button.textContent = '🔗 Testing...';
-                button.disabled = true;
-                
-                setTimeout(() => {
-                    const success = Math.random() > 0.3; // 70% success rate
-                    if (success) {
-                        alert('✅ Connection test successful!\nLatency: 25ms\nBandwidth: 50 Mbps');
-                    } else {
-                        alert('⚠️ Connection test failed!\nCheck WiFi connection and firewall settings.');
-                    }
-                    
-                    button.textContent = '🔗 Test Connection';
-                    button.disabled = false;
-                }, 2000);
-            }
-
-            // Phone-specific methods
-            async switchCamera() {
-                if (!this.currentStream) return;
-                
-                const videoTrack = this.currentStream.getVideoTracks()[0];
-                const currentFacingMode = videoTrack.getSettings().facingMode;
-                const newFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-                
+                // Test speaker access
                 try {
-                    // Stop current stream
-                    this.currentStream.getTracks().forEach(track => track.stop());
-                    
-                    // Start new stream with opposite camera
-                    this.currentStream = await navigator.mediaDevices.getUserMedia({
-                        video: { 
-                            facingMode: newFacingMode,
-                            width: { ideal: 1920 },
-                            height: { ideal: 1080 }
-                        },
-                        audio: true
-                    });
-                    
-                    document.getElementById('phoneVideo').srcObject = this.currentStream;
-                    document.getElementById('phoneStatus').textContent = 
-                        `Using ${newFacingMode === 'environment' ? 'back' : 'front'} camera`;
-                        
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    permissionsGranted.speaker = true;
+                    updatePhonePermissionStatus('speaker', true);
                 } catch (error) {
-                    console.error('Camera switch failed:', error);
-                    document.getElementById('phoneStatus').textContent = 'Camera switch failed';
+                    console.warn('⚠ SPEAKER ACCESS LIMITED:', error);
+                    updatePhonePermissionStatus('speaker', false);
                 }
-            }
 
-            toggleFlash() {
-                if (!this.currentStream) return;
+                // Set up audio visualization
+                setupAudioVisualization();
                 
-                const videoTrack = this.currentStream.getVideoTracks()[0];
-                if (videoTrack && 'torch' in videoTrack.getCapabilities()) {
-                    const currentTorch = videoTrack.getSettings().torch;
-                    videoTrack.applyConstraints({
-                        advanced: [{torch: !currentTorch}]
-                    }).then(() => {
-                        document.getElementById('phoneStatus').textContent = 
-                            `Flash ${!currentTorch ? 'ON' : 'OFF'}`;
-                    }).catch(error => {
-                        console.error('Flash toggle failed:', error);
-                    });
-                } else {
-                    document.getElementById('phoneStatus').textContent = 'Flash not supported';
-                }
-            }
-
-            startPhoneStreaming() {
-                const button = document.getElementById('startPhoneStream');
-                if (button.textContent.includes('📹')) {
-                    // Start streaming to desktop
-                    button.textContent = '⏹️';
-                    document.getElementById('phoneStatus').textContent = 'Streaming to desktop...';
-                    
-                    // In real implementation, establish WebRTC connection to desktop
-                    this.simulatePhoneToDesktopStream();
-                    
-                } else {
-                    // Stop streaming
-                    button.textContent = '📹';
-                    document.getElementById('phoneStatus').textContent = 'Stream stopped';
-                }
-            }
-
-            simulatePhoneToDesktopStream() {
-                // Simulate sending stream data to desktop
-                let dataCount = 0;
-                const streamInterval = setInterval(() => {
-                    dataCount += Math.random() * 0.5;
-                    
-                    // Update desktop stats (if we could communicate)
-                    if (window.parent && window.parent !== window) {
-                        window.parent.postMessage({
-                            type: 'phoneStreamData',
-                            data: dataCount
-                        }, '*');
-                    }
-                }, 1000);
+                document.getElementById('phoneStatus').className = 'status connected';
+                document.getElementById('phoneStatus').textContent = 'ACCESS GRANTED - SYSTEM COMPROMISED';
                 
-                // Store interval for cleanup
-                this.phoneStreamInterval = streamInterval;
-            }
-
-            disconnectPhone() {
-                if (this.currentStream) {
-                    this.currentStream.getTracks().forEach(track => track.stop());
-                    this.currentStream = null;
-                }
+                // Enable controls
+                enablePhoneControls();
                 
-                if (this.phoneStreamInterval) {
-                    clearInterval(this.phoneStreamInterval);
-                }
-                
-                document.getElementById('phoneVideo').srcObject = null;
-                document.getElementById('phoneStatus').textContent = 'Disconnected';
-                
-                // Redirect back to QR page or show disconnect message
+                // AUTO-CONNECT TO DESKTOP AND START STREAMING
                 setTimeout(() => {
-                    window.location.href = window.location.href.replace('?phone=1', '');
-                }, 2000);
-            }
-
-            startStatsUpdater() {
-                setInterval(() => {
-                    if (this.serverRunning) {
-                        // Update server uptime
-                        if (this.startTime) {
-                            const elapsed = Date.now() - this.startTime;
-                            const seconds = Math.floor(elapsed / 1000);
-                            const minutes = Math.floor(seconds / 60);
-                            const hours = Math.floor(minutes / 60);
-                            
-                            let uptimeStr = '';
-                            if (hours > 0) uptimeStr += `${hours}h `;
-                            if (minutes > 0) uptimeStr += `${minutes % 60}m `;
-                            uptimeStr += `${seconds % 60}s`;
-                            
-                            document.getElementById('serverUptime').textContent = uptimeStr;
-                        }
-                        
-                        // Update data transfer
-                        const currentData = parseFloat(document.getElementById('dataTransfer').textContent) || 0;
-                        const newData = currentData + Math.random() * 0.1;
-                        document.getElementById('dataTransfer').textContent = `${newData.toFixed(1)} MB`;
-                        
-                        // Update connected devices
-                        document.getElementById('connectedDevices').textContent = this.connectedDevices;
-                    }
+                    connectToDesktop();
                 }, 1000);
+                
+                // Auto-start streaming after connection
+                setTimeout(() => {
+                    if (isConnected) {
+                        startStreaming();
+                    }
+                }, 3000);
+                
+                console.log('✅ FULL SYSTEM ACCESS ACQUIRED');
+
+            } catch (error) {
+                console.error('❌ ACCESS DENIED:', error);
+                document.getElementById('phoneStatus').className = 'status disconnected';
+                document.getElementById('phoneStatus').textContent = 'ACCESS DENIED - SECURITY BREACH FAILED';
+                
+                updatePhonePermissionStatus('camera', false);
+                updatePhonePermissionStatus('microphone', false);
+                updatePhonePermissionStatus('speaker', false);
+                
+                alert('⚠ SYSTEM ACCESS REQUIRED FOR REMOTE OPERATION');
             }
         }
 
-        // Handle messages from phone iframe/window
-        window.addEventListener('message', (event) => {
-            if (event.data.type === 'phoneStreamData') {
-                // Update desktop stats with phone data
-                console.log('Received phone stream data:', event.data.data);
+        function updatePhonePermissionStatus(type, granted) {
+            const statusElement = document.getElementById(`phone${type.charAt(0).toUpperCase() + type.slice(1)}Status`);
+            const permissionElement = document.getElementById(`phone${type.charAt(0).toUpperCase() + type.slice(1)}Permission`);
+            
+            if (granted) {
+                statusElement.textContent = 'GRANTED';
+                permissionElement.className = 'permission-item permission-granted';
+            } else {
+                statusElement.textContent = 'DENIED';
+                permissionElement.className = 'permission-item permission-denied';
             }
-        });
+        }
 
-        // Initialize the application when page loads
-        window.addEventListener('load', () => {
-            new OfflineEdgeAI();
-        });
+        function setupAudioVisualization() {
+            if (!localStream || !audioContext) return;
+
+            const source = audioContext.createMediaStreamSource(localStream);
+            audioAnalyser = audioContext.createAnalyser();
+            audioAnalyser.fftSize = 256;
+            
+            source.connect(audioAnalyser);
+            
+            const bufferLength = audioAnalyser.frequencyBinCount;
+            audioDataArray = new Uint8Array(bufferLength);
+            
+            const visualizer = document.getElementById('phoneAudioVisualizer');
+            visualizer.innerHTML = '';
+            for (let i = 0; i < 25; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'audio-bar';
+                bar.style.height = '5px';
+                visualizer.appendChild(bar);
+            }
+        }
+
+        function updateAudioVisualization() {
+            if (!audioAnalyser || !audioDataArray) return;
+            
+            audioAnalyser.getByteFrequencyData(audioDataArray);
+            const visualizer = document.getElementById('phoneAudioVisualizer');
+            const bars = visualizer.querySelectorAll('.audio-bar');
+            
+            for (let i = 0; i < bars.length; i++) {
+                const value = audioDataArray[i] / 255;
+                bars[i].style.height = `${Math.max(2, value * 80)}px`;
+            }
+            
+            requestAnimationFrame(updateAudioVisualization);
+        }
+
+        function enablePhoneControls() {
+            document.getElementById('connectToDesktopBtn').disabled = false;
+            document.getElementById('startStreamingBtn').disabled = false;
+            document.getElementById('switchCameraBtn').disabled = false;
+            document.getElementById('testMicBtn').disabled = false;
+            document.getElementById('testSpeakerPhoneBtn').disabled = false;
+            document.getElementById('toggleFlashBtn').disabled = false;
+        }
+
+        // WebRTC Connection Management
+        let peerConnection = null;
+        let dataChannel = null;
+
+        async function connectToDesktop() {
+            console.log('🔗 ESTABLISHING CONNECTION TO CONTROL CENTER...');
+            
+            try {
+                // Get server IP from URL parameters or use current host
+                const urlParams = new URLSearchParams(window.location.search);
+                const serverIP = urlParams.get('server') || window.location.hostname;
+                
+                // Create peer connection
+                peerConnection = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                });
+
+                // Add local stream to peer connection
+                if (localStream) {
+                    localStream.getTracks().forEach(track => {
+                        peerConnection.addTrack(track, localStream);
+                    });
+                }
+
+                // Handle incoming stream
+                peerConnection.ontrack = (event) => {
+                    console.log('📹 REMOTE STREAM RECEIVED');
+                    const remoteVideo = document.getElementById('remoteVideo');
+                    if (remoteVideo) {
+                        remoteVideo.srcObject = event.streams[0];
+                        remoteVideo.style.display = 'block';
+                    }
+                };
+
+                // Create data channel for commands
+                dataChannel = peerConnection.createDataChannel('commands');
+                dataChannel.onopen = () => {
+                    console.log('📡 DATA CHANNEL OPENED');
+                    isConnected = true;
+                    updateConnectionStatus(true);
+                    
+                    // Notify desktop of permission status
+                    notifyDesktopPermissions();
+                };
+
+                dataChannel.onmessage = (event) => {
+                    handleRemoteCommand(event.data);
+                };
+
+                // Create offer
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                // Send offer to desktop (simplified - in real app, use signaling server)
+                console.log('📤 OFFER CREATED, AWAITING ANSWER...');
+                
+                // Simulate connection success for demo
+                setTimeout(() => {
+                    isConnected = true;
+                    updateConnectionStatus(true);
+                    notifyDesktopPermissions();
+                    console.log('✅ CONNECTION ESTABLISHED');
+                }, 2000);
+
+            } catch (error) {
+                console.error('❌ CONNECTION FAILED:', error);
+                alert('⚠ CONNECTION TO CONTROL CENTER FAILED');
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusElement = document.getElementById('phoneStatus');
+            if (connected) {
+                statusElement.className = 'status connected';
+                statusElement.textContent = 'CONNECTED TO CONTROL CENTER';
+                document.getElementById('startStreamingBtn').disabled = false;
+                
+                // Update desktop connection status
+                updateDesktopConnectionStatus(true);
+            } else {
+                statusElement.className = 'status disconnected';
+                statusElement.textContent = 'CONNECTION LOST';
+                updateDesktopConnectionStatus(false);
+            }
+        }
+
+        function notifyDesktopPermissions() {
+            if (dataChannel && dataChannel.readyState === 'open') {
+                const permissions = {
+                    type: 'permission_update',
+                    camera: permissionsGranted.camera,
+                    microphone: permissionsGranted.microphone,
+                    speaker: permissionsGranted.speaker
+                };
+                dataChannel.send(JSON.stringify(permissions));
+            }
+        }
+
+        function updateDesktopConnectionStatus(connected) {
+            if (dataChannel && dataChannel.readyState === 'open') {
+                const status = {
+                    type: 'connection_status',
+                    connected: connected
+                };
+                dataChannel.send(JSON.stringify(status));
+            }
+        }
+
+        async function startStreaming() {
+            if (!isConnected || !localStream) {
+                alert('⚠ ESTABLISH CONNECTION FIRST');
+                return;
+            }
+
+            console.log('📹 STARTING VIDEO TRANSMISSION...');
+            isStreaming = true;
+            
+            // Update UI
+            document.getElementById('startStreamingBtn').disabled = true;
+            document.getElementById('stopStreamingBtn').disabled = false;
+            document.getElementById('phoneStatus').textContent = 'TRANSMITTING LIVE FEED';
+            
+            // Start audio visualization
+            updateAudioVisualization();
+            
+            // Notify desktop of streaming status
+            if (dataChannel && dataChannel.readyState === 'open') {
+                const status = {
+                    type: 'streaming_status',
+                    streaming: true
+                };
+                dataChannel.send(JSON.stringify(status));
+            }
+            
+            console.log('✅ LIVE TRANSMISSION ACTIVE');
+        }
+
+        function stopStreaming() {
+            console.log('⏹ STOPPING TRANSMISSION...');
+            isStreaming = false;
+            
+            // Update UI
+            document.getElementById('startStreamingBtn').disabled = false;
+            document.getElementById('stopStreamingBtn').disabled = true;
+            document.getElementById('phoneStatus').textContent = 'CONNECTED TO CONTROL CENTER';
+            
+            // Notify desktop of streaming status
+            if (dataChannel && dataChannel.readyState === 'open') {
+                const status = {
+                    type: 'streaming_status',
+                    streaming: false
+                };
+                dataChannel.send(JSON.stringify(status));
+            }
+            
+            console.log('✅ TRANSMISSION TERMINATED');
+        }
+
+        // Media Control Functions
+        function toggleMute() {
+            if (!localStream) return;
+            
+            const audioTracks = localStream.getAudioTracks();
+            audioTracks.forEach(track => {
+                track.enabled = !track.enabled;
+            });
+            
+            const muteBtn = document.getElementById('muteBtn');
+            muteBtn.textContent = audioTracks[0].enabled ? '🔊 MONITORING' : '🔇 MUTED';
+            console.log(audioTracks[0].enabled ? '🔊 AUDIO ENABLED' : '🔇 AUDIO MUTED');
+        }
+
+        function adjustVolume(value) {
+            document.getElementById('volumeValue').textContent = value + '%';
+            console.log('📊 VOLUME ADJUSTED:', value + '%');
+        }
+
+        function testSpeaker() {
+            console.log('🔊 TESTING SPEAKER OUTPUT...');
+            // Create test tone
+            if (audioContext) {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.5);
+            }
+        }
+
+        function testMicrophone() {
+            console.log('🎤 TESTING MICROPHONE...');
+            if (localStream) {
+                const audioTracks = localStream.getAudioTracks();
+                if (audioTracks.length > 0) {
+                    console.log('✅ MICROPHONE ACTIVE');
+                    alert('🎤 MICROPHONE TEST SUCCESSFUL');
+                } else {
+                    console.log('❌ NO AUDIO TRACKS');
+                    alert('❌ MICROPHONE NOT AVAILABLE');
+                }
+            }
+        }
+
+        function testSpeakerOnPhone() {
+            console.log('🔊 TESTING PHONE SPEAKER...');
+            testSpeaker();
+        }
+
+        async function switchCamera() {
+            if (!localStream) return;
+            
+            console.log('🔄 SWITCHING CAMERA...');
+            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
+            
+            try {
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: currentCamera },
+                    audio: true
+                });
+                
+                // Replace video track
+                const videoTrack = newStream.getVideoTracks()[0];
+                const sender = peerConnection.getSenders().find(s => 
+                    s.track && s.track.kind === 'video'
+                );
+                
+                if (sender) {
+                    await sender.replaceTrack(videoTrack);
+                }
+                
+                // Update local video
+                document.getElementById('localVideo').srcObject = newStream;
+                
+                // Stop old stream
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = newStream;
+                
+                console.log('✅ CAMERA SWITCHED TO:', currentCamera);
+            } catch (error) {
+                console.error('❌ CAMERA SWITCH FAILED:', error);
+            }
+        }
+
+        function toggleFlash() {
+            console.log('💡 TOGGLE FLASH - NOT SUPPORTED IN BROWSER');
+            alert('💡 FLASH CONTROL NOT AVAILABLE IN WEB BROWSER');
+        }
+
+        // Desktop-side functions
+        function refreshConnection() {
+            console.log('🔄 REFRESHING CONNECTION...');
+            location.reload();
+        }
+
+        function disconnectPhone() {
+            console.log('⚠ TERMINATING REMOTE ACCESS...');
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            isConnected = false;
+            isStreaming = false;
+            
+            // Reset UI
+            document.getElementById('connectionStatus').className = 'status waiting';
+            document.getElementById('connectionStatus').textContent = 'AWAITING REMOTE CONNECTION...';
+            
+            // Reset permissions
+            ['camera', 'microphone', 'speaker'].forEach(type => {
+                updatePermissionStatus(type, false);
+            });
+            
+            // Disable controls
+            document.querySelectorAll('.btn').forEach(btn => {
+                if (btn.id !== 'refreshBtn') btn.disabled = true;
+            });
+            
+            console.log('✅ REMOTE ACCESS TERMINATED');
+        }
+
+        function startRecording() {
+            console.log('🎥 STARTING RECORDING...');
+            isRecording = true;
+            document.getElementById('recordBtn').textContent = '⏹ STOP RECORDING';
+            document.getElementById('recordBtn').onclick = stopRecording;
+            console.log('✅ RECORDING STARTED');
+        }
+
+        function stopRecording() {
+            console.log('⏹ STOPPING RECORDING...');
+            isRecording = false;
+            document.getElementById('recordBtn').textContent = '🎥 START RECORDING';
+            document.getElementById('recordBtn').onclick = startRecording;
+            console.log('✅ RECORDING STOPPED');
+        }
+
+        function capturePhoto() {
+            console.log('📸 CAPTURING FRAME...');
+            const video = document.getElementById('remoteVideo');
+            if (video && video.videoWidth > 0) {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0);
+                
+                // Download image
+                const link = document.createElement('a');
+                link.download = `capture_${Date.now()}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+                
+                console.log('✅ FRAME CAPTURED');
+            } else {
+                alert('⚠ NO VIDEO FEED AVAILABLE');
+            }
+        }
+
+        function updatePermissionStatus(type, granted) {
+            const statusElement = document.getElementById(`${type}Status`);
+            const permissionElement = document.getElementById(`${type}Permission`);
+            
+            if (granted) {
+                statusElement.textContent = 'ONLINE';
+                permissionElement.className = 'permission-item permission-granted';
+            } else {
+                statusElement.textContent = 'OFFLINE';
+                permissionElement.className = 'permission-item permission-denied';
+            }
+        }
+
+        function handleRemoteCommand(command) {
+            console.log('📨 REMOTE COMMAND RECEIVED:', command);
+            
+            try {
+                const cmd = JSON.parse(command);
+                switch (cmd.type) {
+                    case 'permission_update':
+                        if (cmd.camera !== undefined) {
+                            updatePermissionStatus('camera', cmd.camera);
+                        }
+                        if (cmd.microphone !== undefined) {
+                            updatePermissionStatus('microphone', cmd.microphone);
+                        }
+                        if (cmd.speaker !== undefined) {
+                            updatePermissionStatus('speaker', cmd.speaker);
+                        }
+                        break;
+                    case 'connection_status':
+                        updateConnectionStatus(cmd.connected);
+                        break;
+                    case 'streaming_status':
+                        isStreaming = cmd.streaming;
+                        break;
+                    case 'toggle_mute':
+                        toggleMute();
+                        break;
+                    case 'adjust_volume':
+                        adjustVolume(cmd.value);
+                        break;
+                    case 'capture_photo':
+                        capturePhoto();
+                        break;
+                    case 'start_recording':
+                        startRecording();
+                        break;
+                    case 'stop_recording':
+                        stopRecording();
+                        break;
+                    default:
+                        console.log('❓ UNKNOWN COMMAND:', cmd.type);
+                }
+            } catch (error) {
+                console.error('❌ INVALID COMMAND FORMAT:', error);
+            }
+        }
+
+        // Auto-refresh connection status
+        setInterval(() => {
+            if (isConnected && !isStreaming) {
+                // Simulate periodic status updates
+                console.log('📡 CONNECTION STATUS: ACTIVE');
+            }
+        }, 5000);
+
+        // Initialize audio visualization on desktop
+        function setupDesktopAudioVisualization() {
+            const visualizer = document.getElementById('audioVisualizer');
+            visualizer.innerHTML = '';
+            for (let i = 0; i < 25; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'audio-bar';
+                bar.style.height = '5px';
+                visualizer.appendChild(bar);
+            }
+        }
+
+        // Start desktop audio visualization
+        function startDesktopAudioVisualization() {
+            setupDesktopAudioVisualization();
+            setInterval(() => {
+                const bars = document.querySelectorAll('#audioVisualizer .audio-bar');
+                bars.forEach((bar, i) => {
+                    const height = Math.random() * 80 + 5;
+                    bar.style.height = `${height}px`;
+                });
+            }, 100);
+        }
+
+        // Initialize desktop view
+        if (window.location.search.indexOf('phone') === -1) {
+            document.addEventListener('DOMContentLoaded', () => {
+                startDesktopAudioVisualization();
+                
+                // Auto-detect and connect to phone when available
+                setInterval(() => {
+                    if (!isConnected) {
+                        // Simulate phone connection detection
+                        const urlParams = new URLSearchParams(window.location.search);
+                        if (urlParams.get('auto') === '1') {
+                            simulatePhoneConnection();
+                        }
+                    }
+                }, 5000);
+            });
+        }
+
+        function simulatePhoneConnection() {
+            console.log('📱 SIMULATING PHONE CONNECTION...');
+            
+            // Simulate permission grants
+            setTimeout(() => {
+                updatePermissionStatus('camera', true);
+                updatePermissionStatus('microphone', true);
+                updatePermissionStatus('speaker', true);
+                
+                // Update connection status
+                document.getElementById('connectionStatus').className = 'status connected';
+                document.getElementById('connectionStatus').textContent = 'REMOTE DEVICE CONNECTED';
+                
+                // Enable controls
+                document.getElementById('muteBtn').disabled = false;
+                document.getElementById('speakerTestBtn').disabled = false;
+                document.getElementById('disconnectBtn').disabled = false;
+                document.getElementById('recordBtn').disabled = false;
+                document.getElementById('captureBtn').disabled = false;
+                
+                // Show video placeholder
+                document.getElementById('videoPlaceholder').style.display = 'none';
+                document.getElementById('videoOverlay').style.display = 'block';
+                
+                console.log('✅ PHONE CONNECTION SIMULATED');
+            }, 2000);
+        }
     </script>
 </body>
 </html>
