@@ -8,6 +8,16 @@ import json
 import threading
 from typing import Tuple, List, Optional, Dict
 
+# Try to import insightface for MobileFaceNet
+try:
+    import insightface
+    from insightface.app import FaceAnalysis
+    INSIGHTFACE_AVAILABLE = True
+    print("✅ InsightFace (MobileFaceNet) available")
+except ImportError:
+    INSIGHTFACE_AVAILABLE = False
+    print("⚠️ InsightFace not available, using fallback face recognition")
+
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -36,6 +46,17 @@ class CompleteVoiceCVSystem:
         self.camera = None
         self.is_running = False
         self.athena = None  # Athena voice system
+
+        # Initialize MobileFaceNet if available
+        self.face_analyzer = None
+        if INSIGHTFACE_AVAILABLE:
+            try:
+                self.face_analyzer = FaceAnalysis(name='buffalo_l')  # MobileFaceNet model
+                self.face_analyzer.prepare(ctx_id=0, det_size=(640, 640))
+                print("✅ MobileFaceNet initialized successfully")
+            except Exception as e:
+                print(f"⚠️ Failed to initialize MobileFaceNet: {e}")
+                self.face_analyzer = None
 
         # Initialize face detection
         self.initialize_face_detection()
@@ -90,6 +111,18 @@ class CompleteVoiceCVSystem:
                 with open(self.database_file, 'r') as f:
                     self.known_faces = json.load(f)
                 logger.info(f"Loaded database with {len(self.known_faces)} known faces")
+
+                # Check if we need to update database with embeddings
+                needs_update = False
+                for face_id, metadata in self.known_faces.items():
+                    if 'embedding' not in metadata and 'image_path' in metadata:
+                        needs_update = True
+                        break
+
+                if needs_update and self.face_analyzer is not None:
+                    logger.info("Updating database with MobileFaceNet embeddings...")
+                    self.update_database_with_embeddings()
+
             except Exception as e:
                 logger.error(f"Error loading database: {e}")
                 self.known_faces = {}
@@ -97,9 +130,49 @@ class CompleteVoiceCVSystem:
             logger.info("No database found, starting with empty database")
             self.known_faces = {}
 
+    def update_database_with_embeddings(self):
+        """Update existing database entries with MobileFaceNet embeddings."""
+        updated_count = 0
+
+        for face_id, metadata in self.known_faces.items():
+            if 'embedding' not in metadata and 'image_path' in metadata:
+                image_path = os.path.join(self.database_dir, metadata['image_path'])
+
+                if os.path.exists(image_path):
+                    try:
+                        # Load image and get embedding
+                        image = cv2.imread(image_path)
+                        if image is not None:
+                            faces = self.face_analyzer.get(image)
+                            if faces:
+                                # Use the first face found
+                                face = faces[0]
+                                embedding = face.embedding.astype(np.float32)
+                                embedding = embedding / np.linalg.norm(embedding)  # L2 normalize
+
+                                # Store embedding in metadata
+                                metadata['embedding'] = embedding.tolist()
+                                updated_count += 1
+                                logger.debug(f"Updated embedding for {metadata['name']}")
+                    except Exception as e:
+                        logger.warning(f"Failed to update embedding for {face_id}: {e}")
+
+        if updated_count > 0:
+            self.save_known_faces()
+            logger.info(f"Updated {updated_count} faces with MobileFaceNet embeddings")
+
+    def save_known_faces(self):
+        """Save known faces metadata to file."""
+        try:
+            with open(self.database_file, 'w') as f:
+                json.dump(self.known_faces, f, indent=2)
+            logger.info("Saved known faces metadata")
+        except Exception as e:
+            logger.error(f"Error saving faces metadata: {e}")
+
     def identify_faces(self, image: np.ndarray) -> List[Tuple[str, str, float]]:
         """
-        Identify faces in the input image by comparing with known faces.
+        Identify faces in the input image using MobileFaceNet embeddings.
 
         Args:
             image: Input image in BGR format
@@ -108,58 +181,97 @@ class CompleteVoiceCVSystem:
             List of (name, face_id, similarity_score) tuples for each detected face
         """
         try:
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-            # Detect faces
-            faces = self.face_cascade.detectMultiScale(
-                gray,
-                scaleFactor=1.1,
-                minNeighbors=5,
-                minSize=(30, 30)
-            )
-
             identifications = []
 
-            for (x, y, w, h) in faces:
-                face_roi = gray[y:y+h, x:x+w]
+            # Use MobileFaceNet if available
+            if self.face_analyzer is not None:
+                # Detect faces and get embeddings using MobileFaceNet
+                faces = self.face_analyzer.get(image)
 
-                # Compare with known faces
-                best_match = None
-                best_score = 0.0
-                best_face_id = None
+                for face in faces:
+                    # Get face embedding (512D vector for buffalo_l model)
+                    embedding = face.embedding.astype(np.float32)
+                    embedding = embedding / np.linalg.norm(embedding)  # L2 normalize
 
-                for face_id, metadata in self.known_faces.items():
-                    known_face_path = os.path.join(self.database_dir, metadata['image_path'])
+                    # Compare with known faces using cosine similarity
+                    best_match = None
+                    best_score = 0.0
+                    best_face_id = None
 
-                    if os.path.exists(known_face_path):
-                        known_face = cv2.imread(known_face_path, cv2.IMREAD_GRAYSCALE)
+                    for face_id, metadata in self.known_faces.items():
+                        if 'embedding' in metadata:
+                            # Load stored embedding
+                            known_embedding = np.array(metadata['embedding'], dtype=np.float32)
 
-                        if known_face is not None and known_face.shape[0] > 0 and known_face.shape[1] > 0:
-                            # Resize faces to same size for comparison
-                            try:
-                                resized_current = cv2.resize(face_roi, (known_face.shape[1], known_face.shape[0]))
+                            # Calculate cosine similarity
+                            similarity = np.dot(embedding, known_embedding)
 
-                                # Calculate similarity using histogram comparison
-                                hist_current = cv2.calcHist([resized_current], [0], None, [256], [0, 256])
-                                hist_known = cv2.calcHist([known_face], [0], None, [256], [0, 256])
-                                similarity = cv2.compareHist(hist_current, hist_known, cv2.HISTCMP_CORREL)
+                            if similarity > best_score and similarity > 0.3:  # Lower threshold for embeddings
+                                best_score = similarity
+                                best_match = metadata['name']
+                                best_face_id = face_id
+                                logger.debug(f"Face match found: {metadata['name']} with similarity {similarity:.3f}")
 
-                                if similarity > best_score and similarity > 0.4:
-                                    best_score = similarity
-                                    best_match = metadata['name']
-                                    best_face_id = face_id
-                                    logger.debug(f"Face match found: {metadata['name']} with score {similarity:.3f}")
+                    if best_match:
+                        identifications.append((best_match, best_face_id, float(best_score)))
+                        logger.info(f"Face identified as: {best_match} (similarity: {best_score:.3f})")
+                    else:
+                        identifications.append(("Unknown", "unknown", 0.0))
+                        logger.debug("Face not identified in database")
 
-                            except Exception as e:
-                                logger.debug(f"Error comparing faces: {e}")
-                                continue
+            else:
+                # Fallback to Haar cascade + histogram comparison
+                logger.warning("MobileFaceNet not available, using fallback face recognition")
+                gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-                if best_match:
-                    identifications.append((best_match, best_face_id, best_score))
-                    logger.info(f"Face identified as: {best_match} (score: {best_score:.3f})")
-                else:
-                    identifications.append(("Unknown", "unknown", 0.0))
-                    logger.debug(f"Face not identified - best score: {best_score:.3f}")
+                # Detect faces
+                faces = self.face_cascade.detectMultiScale(
+                    gray,
+                    scaleFactor=1.1,
+                    minNeighbors=5,
+                    minSize=(30, 30)
+                )
+
+                for (x, y, w, h) in faces:
+                    face_roi = gray[y:y+h, x:x+w]
+
+                    # Compare with known faces using histogram comparison
+                    best_match = None
+                    best_score = 0.0
+                    best_face_id = None
+
+                    for face_id, metadata in self.known_faces.items():
+                        known_face_path = os.path.join(self.database_dir, metadata['image_path'])
+
+                        if os.path.exists(known_face_path):
+                            known_face = cv2.imread(known_face_path, cv2.IMREAD_GRAYSCALE)
+
+                            if known_face is not None and known_face.shape[0] > 0 and known_face.shape[1] > 0:
+                                # Resize faces to same size for comparison
+                                try:
+                                    resized_current = cv2.resize(face_roi, (known_face.shape[1], known_face.shape[0]))
+
+                                    # Calculate similarity using histogram comparison
+                                    hist_current = cv2.calcHist([resized_current], [0], None, [256], [0, 256])
+                                    hist_known = cv2.calcHist([known_face], [0], None, [256], [0, 256])
+                                    similarity = cv2.compareHist(hist_current, hist_known, cv2.HISTCMP_CORREL)
+
+                                    if similarity > best_score and similarity > 0.4:
+                                        best_score = similarity
+                                        best_match = metadata['name']
+                                        best_face_id = face_id
+                                        logger.debug(f"Face match found: {metadata['name']} with score {similarity:.3f}")
+
+                                except Exception as e:
+                                    logger.debug(f"Error comparing faces: {e}")
+                                    continue
+
+                    if best_match:
+                        identifications.append((best_match, best_face_id, best_score))
+                        logger.info(f"Face identified as: {best_match} (score: {best_score:.3f})")
+                    else:
+                        identifications.append(("Unknown", "unknown", 0.0))
+                        logger.debug(f"Face not identified - best score: {best_score:.3f}")
 
             return identifications
 
@@ -387,31 +499,58 @@ class CompleteVoiceCVSystem:
         """
         output = image.copy()
 
-        # Detect faces for drawing bounding boxes
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        faces = self.face_cascade.detectMultiScale(
-            gray,
-            scaleFactor=1.1,
-            minNeighbors=5,
-            minSize=(30, 30)
-        )
+        # Use MobileFaceNet face detection if available, otherwise fallback to Haar
+        if self.face_analyzer is not None:
+            # Get faces from MobileFaceNet
+            faces = self.face_analyzer.get(image)
 
-        for i, ((x, y, w, h), (name, face_id, score)) in enumerate(zip(faces, identifications)):
-            # Choose color based on identification result
-            if name == "Unknown":
-                color = (0, 0, 255)  # Red for unknown
-                label = "Unknown"
-            else:
-                color = (0, 255, 0)  # Green for known
-                label = f"{name} ({score:.2f})"
+            for i, (face, (name, face_id, score)) in enumerate(zip(faces, identifications)):
+                # Get bounding box from MobileFaceNet
+                bbox = face.bbox.astype(int)
+                x, y, x2, y2 = bbox
+                w, h = x2 - x, y2 - y
 
-            # Draw rectangle
-            cv2.rectangle(output, (x, y), (x + w, y + h), color, 2)
+                # Choose color based on identification result
+                if name == "Unknown":
+                    color = (0, 0, 255)  # Red for unknown
+                    label = "Unknown"
+                else:
+                    color = (0, 255, 0)  # Green for known
+                    label = f"{name} ({score:.2f})"
 
-            # Draw label
-            text_y = y - 10 if y > 20 else y + 20
-            cv2.putText(output, label, (x, text_y),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+                # Draw rectangle
+                cv2.rectangle(output, (x, y), (x + w, y + h), color, 2)
+
+                # Draw label
+                text_y = y - 10 if y > 20 else y + 20
+                cv2.putText(output, label, (x, text_y),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+        else:
+            # Fallback to Haar cascade detection
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            faces = self.face_cascade.detectMultiScale(
+                gray,
+                scaleFactor=1.1,
+                minNeighbors=5,
+                minSize=(30, 30)
+            )
+
+            for i, ((x, y, w, h), (name, face_id, score)) in enumerate(zip(faces, identifications)):
+                # Choose color based on identification result
+                if name == "Unknown":
+                    color = (0, 0, 255)  # Red for unknown
+                    label = "Unknown"
+                else:
+                    color = (0, 255, 0)  # Green for known
+                    label = f"{name} ({score:.2f})"
+
+                # Draw rectangle
+                cv2.rectangle(output, (x, y), (x + w, y + h), color, 2)
+
+                # Draw label
+                text_y = y - 10 if y > 20 else y + 20
+                cv2.putText(output, label, (x, text_y),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
 
         return output
 
