@@ -118,7 +118,7 @@ Athena demonstrates the power of Snapdragon Edge AI to:
 
 Athena Security Guardian was developed at the Snapdragon Multiverse Hackathon (Princeton, 2025) by:
 	- Satvika Maram -satvika.maram@gmail.com
-    - Ankith Nagabandi - ankithnagabandi@gmail.com
+    * Ankith Nagabandi - ankithnagabandi@gmail.com
 
 ⸻
 📜 License
